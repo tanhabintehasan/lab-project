@@ -1,7 +1,7 @@
 {
   "common": {
-    "siteName": "LabTest Pro",
-    "siteDesc": "Professional Testing Service Platform",
+    "siteName": "Weights & Measures Scientific Research Platform",
+    "siteDesc": "Rooted in scientific frontiers, serving China's innovation",
     "loading": "Loading...",
     "error": "Something went wrong",
     "retry": "Retry",
@@ -68,8 +68,8 @@
   },
   "home": {
     "hero": {
-      "title": "Professional Testing, Trusted Results",
-      "subtitle": "One-stop testing service platform connecting enterprises with quality laboratories",
+      "title": "Weights & Measures Scientific Research Platform",
+      "subtitle": "Rooted in scientific frontiers, serving China's innovation",
       "searchPlaceholder": "Search testing services, materials, standards...",
       "cta": "Get Started",
       "ctaSecondary": "Browse Services"
@@ -305,7 +305,7 @@
     "bookingHistory": "Booking History"
   },
   "enterprise": {
-    "title": "Enterprise Zone",
+    "title": "Weights & Measures Scientific Research Platform",
     "workspace": "Workspace",
     "members": "Member Management",
     "billing": "Enterprise Billing",
@@ -372,7 +372,7 @@
     "viewReports": "View Reports"
   },
   "admin": {
-    "title": "Admin Panel",
+    "title": "Weights & Measures Scientific Research Platform",
     "dashboard": "Dashboard",
     "services": "Service Management",
     "orders": "Order Management",
@@ -391,7 +391,7 @@
     "auditLog": "Audit Log"
   },
   "labPortal": {
-    "title": "Lab Portal",
+    "title": "Weights & Measures Scientific Research Platform",
     "dashboard": "Dashboard",
     "assignedOrders": "Assigned Orders",
     "assignedRFQs": "Assigned RFQs",
@@ -423,7 +423,7 @@
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
     "icp": "ICP License: XXXXXXXX",
-    "copyright": "© 2026 LabTest Pro. All rights reserved."
+    "copyright": "© 2026 Weights & Measures Scientific Research Platform. All rights reserved."
   },
   "search": {
     "title": "Search Results",

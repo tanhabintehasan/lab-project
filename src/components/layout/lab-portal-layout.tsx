@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import {
   LayoutDashboard, ShoppingCart, Package, FileText, Wrench,
-  FileQuestion, BarChart3, Microscope, ChevronLeft, ChevronRight,
+  FileQuestion, Microscope, ChevronLeft, ChevronRight,
   Bell, Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -41,7 +41,7 @@ export function LabPortalLayout({ children }: LabPortalLayoutProps) {
       <div className="h-16 flex items-center px-4 border-b border-emerald-800">
         <Link href="/lab-portal/dashboard" className="flex items-center gap-2">
           <Microscope className="h-7 w-7 text-emerald-400 flex-shrink-0" />
-          {!collapsed && <span className="font-bold text-white">{t('title')}</span>}
+          {!collapsed && <span className="font-bold text-white">度量衡科研平台</span>}
         </Link>
       </div>
 
@@ -93,7 +93,7 @@ export function LabPortalLayout({ children }: LabPortalLayoutProps) {
             <button className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100" onClick={() => setMobileOpen(true)}>
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">{t('title')}</h1>
+            <h1 className="text-lg font-semibold text-gray-900">度量衡科研平台</h1>
           </div>
           <div className="flex items-center gap-2">
             <button className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"><Bell className="h-5 w-5" /></button>

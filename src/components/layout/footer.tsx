@@ -50,11 +50,10 @@ export function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <FlaskConical className="h-7 w-7 text-blue-400" />
-              <span className="text-lg font-bold text-white">精测实验</span>
+              <span className="text-lg font-bold text-white">度量衡科研平台</span>
             </div>
             <p className="text-sm text-gray-400 mb-6 max-w-sm">
-              专业的一站式检测服务平台，连接企业与优质实验室，
-              提供高效、透明、可靠的检测解决方案。
+              立足科学前沿，服务中国创新
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">

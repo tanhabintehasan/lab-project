@@ -5,9 +5,9 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import {
   LayoutDashboard, ShoppingCart, Package, FileText, Wallet,
-  Users, MessageSquare, Settings, User, Heart, FileQuestion,
+  Users, MessageSquare, Settings, User, FileQuestion,
   ChevronLeft, ChevronRight, Bell, FlaskConical,
-  Building2, Menu,
+  Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -48,7 +48,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="h-16 flex items-center px-4 border-b border-gray-200">
         <Link href="/" className="flex items-center gap-2">
           <FlaskConical className="h-7 w-7 text-blue-600 flex-shrink-0" />
-          {!collapsed && <span className="font-bold text-gray-900">精测实验</span>}
+          {!collapsed && <span className="font-bold text-gray-900">度量衡科研平台</span>}
         </Link>
       </div>
 

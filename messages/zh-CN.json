@@ -1,7 +1,7 @@
 {
   "common": {
-    "siteName": "精测实验",
-    "siteDesc": "专业检测服务平台",
+    "siteName": "度量衡科研平台",
+    "siteDesc": "立足科学前沿，服务中国创新",
     "loading": "加载中...",
     "error": "出错了",
     "retry": "重试",
@@ -68,8 +68,8 @@
   },
   "home": {
     "hero": {
-      "title": "专业检测，值得信赖",
-      "subtitle": "一站式检测服务平台，连接企业与优质实验室",
+      "title": "度量衡科研平台",
+      "subtitle": "立足科学前沿，服务中国创新",
       "searchPlaceholder": "搜索检测服务、材料、标准...",
       "cta": "立即咨询",
       "ctaSecondary": "浏览服务"
@@ -305,7 +305,7 @@
     "bookingHistory": "预约记录"
   },
   "enterprise": {
-    "title": "企业专区",
+    "title": "度量衡科研平台",
     "workspace": "企业空间",
     "members": "成员管理",
     "billing": "企业账单",
@@ -372,7 +372,7 @@
     "viewReports": "查看报告"
   },
   "admin": {
-    "title": "管理后台",
+    "title": "度量衡科研平台",
     "dashboard": "仪表盘",
     "services": "服务管理",
     "orders": "订单管理",
@@ -391,7 +391,7 @@
     "auditLog": "审计日志"
   },
   "labPortal": {
-    "title": "实验室门户",
+    "title": "度量衡科研平台",
     "dashboard": "工作台",
     "assignedOrders": "分配的订单",
     "assignedRFQs": "分配的需求",
@@ -423,7 +423,7 @@
     "terms": "服务条款",
     "privacy": "隐私政策",
     "icp": "京ICP备XXXXXXXX号",
-    "copyright": "© 2026 精测实验 版权所有"
+    "copyright": "© 2026 度量衡科研平台 版权所有"
   },
   "search": {
     "title": "搜索结果",

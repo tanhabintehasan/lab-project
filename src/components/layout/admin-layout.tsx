@@ -26,6 +26,7 @@ import {
   LogOut,
   CreditCard,
   Zap,
+  FolderTree,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -103,19 +104,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   useEffect(() => {
     if (!user) return;
 
-    const financeOnlyPaths = [
-      '/admin/finance',
-      '/admin/transactions',
-      '/admin/referrals',
-      '/admin/analytics',
-    ];
-
     const superAdminOnlyPaths = [
       '/admin/dashboard',
       '/admin/users',
       '/admin/translations',
       '/admin/settings/payments',
       '/admin/settings/webhook-logs',
+      '/admin/service-categories',
     ];
 
     if (user.role === 'FINANCE_ADMIN') {
@@ -157,6 +152,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const superAdminMenu: MenuItem[] = [
     { href: '/admin/dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { href: '/admin/services', icon: FlaskConical, label: t('services') },
+    { href: '/admin/service-categories', icon: FolderTree, label: '分类管理' },
     { href: '/admin/rfq', icon: FileQuestion, label: t('rfq') },
     { href: '/admin/orders', icon: ShoppingCart, label: t('orders') },
     { href: '/admin/samples', icon: Package, label: t('samples') },
@@ -222,7 +218,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <Shield className="h-7 w-7 text-blue-400 flex-shrink-0" />
           {!collapsed && (
             <span className="font-bold text-white">
-              {user?.role === 'FINANCE_ADMIN' ? 'Finance Panel' : t('title')}
+              度量衡科研平台
             </span>
           )}
         </Link>
@@ -294,9 +290,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">
-              {user?.role === 'FINANCE_ADMIN' ? '财务控制台' : t('title')}
-            </h1>
+            <h1 className="text-lg font-semibold text-gray-900">度量衡科研平台</h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -324,6 +318,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                       >
                         <CreditCard className="h-4 w-4" />
                         支付管理
+                      </Link>
+                      <Link
+                        href="/admin/service-categories"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowQuickActions(false)}
+                      >
+                        <FolderTree className="h-4 w-4" />
+                        分类管理
                       </Link>
                       <Link
                         href="/admin/dashboard"
