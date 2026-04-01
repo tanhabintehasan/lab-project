@@ -81,17 +81,12 @@ export default function RFQPage() {
 
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-          <div className="flex gap-3">
-            <Link href="/custom-testing">
-              <Button variant="outline">定制测试</Button>
-            </Link>
-            <Link href="/rfq/new">
-              <Button>
-                <Plus className="h-4 w-4" />
-                {t('createNew')}
-              </Button>
-            </Link>
-          </div>
+          <Link href="/rfq/new">
+            <Button>
+              <Plus className="h-4 w-4" />
+              {t('createNew')}
+            </Button>
+          </Link>
         </div>
 
         {loading ? (
@@ -122,10 +117,18 @@ export default function RFQPage() {
                     <TableCell className="font-mono text-sm">
                       {r.requestNo as string}
                     </TableCell>
-                    <TableCell className="font-medium">{r.title as string}</TableCell>
+                    <TableCell className="font-medium">
+                      {r.title as string}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant[(r.status as string)] || 'default'}>
-                        {t(`status.${(r.status as string).toLowerCase()}`)}
+                      <Badge
+                        variant={
+                          statusVariant[(r.status as string)] || 'default'
+                        }
+                      >
+                        {t(
+                          `status.${(r.status as string).toLowerCase()}`
+                        )}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
@@ -146,7 +149,11 @@ export default function RFQPage() {
           </Card>
         )}
 
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </div>
     </div>
   );
