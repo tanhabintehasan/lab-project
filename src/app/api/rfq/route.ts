@@ -24,11 +24,11 @@ const createRFQSchema = z.object({
   quantity: z.string().optional(),
   requirements: z.string().optional(),
   deadline: z.string().optional(),
+
   contactName: z.string().optional(),
   contactPhone: z.string().optional(),
   contactEmail: z.string().optional(),
 
-  // custom testing fields
   sampleName: z.string().optional(),
   sampleCondition: z.string().optional(),
   testPurpose: z.string().optional(),
@@ -47,6 +47,7 @@ const createRFQSchema = z.object({
 });
 
 const META_PREFIX = '[META]';
+const ADMIN_NOTE_PREFIX = '[ADMIN_NOTE]';
 
 type ParsedMeta = {
   requestType: 'RFQ' | 'CUSTOM_TESTING';
@@ -73,6 +74,7 @@ function buildNotesWithMeta(input: {
   contactName?: string;
   contactPhone?: string;
   contactEmail?: string;
+  adminNote?: string;
 }) {
   const meta: ParsedMeta = {
     requestType: input.requestType,
@@ -87,65 +89,82 @@ function buildNotesWithMeta(input: {
     contactEmail: input.contactEmail || undefined,
   };
 
-  return `${META_PREFIX}${JSON.stringify(meta)}\n${input.requirements || ''}`.trim();
+  const parts = [`${META_PREFIX}${JSON.stringify(meta)}`];
+
+  if (input.adminNote?.trim()) {
+    parts.push(`${ADMIN_NOTE_PREFIX}${input.adminNote.trim()}`);
+  }
+
+  if (input.requirements?.trim()) {
+    parts.push(input.requirements.trim());
+  }
+
+  return parts.join('\n').trim();
 }
 
 function parseNotes(notes?: string | null): {
   cleanRequirements: string;
+  adminNote: string;
   meta: ParsedMeta;
 } {
   if (!notes) {
     return {
       cleanRequirements: '',
+      adminNote: '',
       meta: { requestType: 'RFQ' },
     };
   }
 
-  const firstLineBreak = notes.indexOf('\n');
-  const firstLine = firstLineBreak === -1 ? notes : notes.slice(0, firstLineBreak);
+  const lines = notes.split('\n');
+  let meta: ParsedMeta = { requestType: 'RFQ' };
+  let adminNote = '';
+  const contentLines: string[] = [];
 
-  if (!firstLine.startsWith(META_PREFIX)) {
-    return {
-      cleanRequirements: notes,
-      meta: { requestType: 'RFQ' },
-    };
+  for (const line of lines) {
+    if (line.startsWith(META_PREFIX)) {
+      try {
+        const parsed = JSON.parse(line.replace(META_PREFIX, '')) as ParsedMeta;
+        meta = {
+          requestType: parsed.requestType || 'RFQ',
+          sampleName: parsed.sampleName,
+          sampleCondition: parsed.sampleCondition,
+          testPurpose: parsed.testPurpose,
+          testingStandard: parsed.testingStandard,
+          expectedOutput: parsed.expectedOutput,
+          urgency: parsed.urgency,
+          contactName: parsed.contactName,
+          contactPhone: parsed.contactPhone,
+          contactEmail: parsed.contactEmail,
+        };
+      } catch {
+        // ignore broken meta
+      }
+      continue;
+    }
+
+    if (line.startsWith(ADMIN_NOTE_PREFIX)) {
+      adminNote = line.replace(ADMIN_NOTE_PREFIX, '').trim();
+      continue;
+    }
+
+    contentLines.push(line);
   }
 
-  try {
-    const metaJson = firstLine.replace(META_PREFIX, '');
-    const parsed = JSON.parse(metaJson) as ParsedMeta;
-    const cleanRequirements = firstLineBreak === -1 ? '' : notes.slice(firstLineBreak + 1).trim();
-
-    return {
-      cleanRequirements,
-      meta: {
-        requestType: parsed.requestType || 'RFQ',
-        sampleName: parsed.sampleName,
-        sampleCondition: parsed.sampleCondition,
-        testPurpose: parsed.testPurpose,
-        testingStandard: parsed.testingStandard,
-        expectedOutput: parsed.expectedOutput,
-        urgency: parsed.urgency,
-        contactName: parsed.contactName,
-        contactPhone: parsed.contactPhone,
-        contactEmail: parsed.contactEmail,
-      },
-    };
-  } catch {
-    return {
-      cleanRequirements: notes,
-      meta: { requestType: 'RFQ' },
-    };
-  }
+  return {
+    cleanRequirements: contentLines.join('\n').trim(),
+    adminNote,
+    meta,
+  };
 }
 
 function serializeRFQ(rfq: any) {
-  const { cleanRequirements, meta } = parseNotes(rfq.notes);
+  const { cleanRequirements, adminNote, meta } = parseNotes(rfq.notes);
 
   return {
     ...rfq,
     requestType: meta.requestType || 'RFQ',
     requirements: cleanRequirements,
+    adminNote,
     sampleName: meta.sampleName || '',
     sampleCondition: meta.sampleCondition || '',
     testPurpose: meta.testPurpose || '',
@@ -158,34 +177,18 @@ function serializeRFQ(rfq: any) {
   };
 }
 
-export async function GET(request: NextRequest) {
-  const user = await getAuthUser(request);
-  if (!user) return errorResponse('未授权', 401);
-
-  try {
-    const { page, pageSize, skip } = getPaginationParams(request);
-    const url = new URL(request.url);
-    const status = url.searchParams.get('status');
-    const requestType = url.searchParams.get('requestType');
-
-    const where: Prisma.RFQRequestWhereInput = {};
-
-    if (user.role === 'CUSTOMER' || user.role === 'ENTERPRISE_MEMBER') {
-      where.userId = user.userId;
-    }
-
-    if (status && (Object.values(RFQStatus) as string[]).includes(status)) {
-      where.status = status as RFQStatus;
-    }
-
-    if (requestType === 'CUSTOM_TESTING') {
-      where.notes = {
+function buildRequestTypeFilter(requestType: string | null): Prisma.RFQRequestWhereInput | null {
+  if (requestType === 'CUSTOM_TESTING') {
+    return {
+      notes: {
         contains: `${META_PREFIX}{"requestType":"CUSTOM_TESTING"`,
-      };
-    }
+      },
+    };
+  }
 
-    if (requestType === 'RFQ') {
-      where.OR = [
+  if (requestType === 'RFQ') {
+    return {
+      OR: [
         { notes: null },
         { notes: { equals: '' } },
         {
@@ -195,14 +198,63 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-      ];
+      ],
+    };
+  }
+
+  return null;
+}
+
+export async function GET(request: NextRequest) {
+  const user = await getAuthUser(request);
+  if (!user) return errorResponse('未授权', 401);
+
+  try {
+    const { page, pageSize, skip } = getPaginationParams(request);
+    const url = new URL(request.url);
+
+    const status = url.searchParams.get('status');
+    const requestType = url.searchParams.get('requestType');
+    const q = url.searchParams.get('q')?.trim();
+
+    const andConditions: Prisma.RFQRequestWhereInput[] = [];
+
+    if (user.role === 'CUSTOMER' || user.role === 'ENTERPRISE_MEMBER') {
+      andConditions.push({ userId: user.userId });
     }
+
+    if (status && (Object.values(RFQStatus) as string[]).includes(status)) {
+      andConditions.push({ status: status as RFQStatus });
+    }
+
+    const requestTypeFilter = buildRequestTypeFilter(requestType);
+    if (requestTypeFilter) {
+      andConditions.push(requestTypeFilter);
+    }
+
+    if (q) {
+      andConditions.push({
+        OR: [
+          { requestNo: { contains: q, mode: 'insensitive' } },
+          { title: { contains: q, mode: 'insensitive' } },
+          { materialDesc: { contains: q, mode: 'insensitive' } },
+          { productType: { contains: q, mode: 'insensitive' } },
+          { testingTarget: { contains: q, mode: 'insensitive' } },
+          { notes: { contains: q, mode: 'insensitive' } },
+          { user: { name: { contains: q, mode: 'insensitive' } } },
+          { user: { email: { contains: q, mode: 'insensitive' } } },
+        ],
+      });
+    }
+
+    const where: Prisma.RFQRequestWhereInput =
+      andConditions.length > 0 ? { AND: andConditions } : {};
 
     const [rfqs, total] = await Promise.all([
       prisma.rFQRequest.findMany({
         where,
         include: {
-          user: { select: { name: true, email: true } },
+          user: { select: { id: true, name: true, email: true } },
           files: true,
           quotations: { select: { id: true, status: true, totalAmount: true } },
           _count: { select: { messages: true } },

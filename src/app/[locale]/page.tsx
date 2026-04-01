@@ -105,7 +105,7 @@ export default function HomePage() {
   );
 
   const handleCustomTesting = useCallback(() => {
-    router.push('/custom-testing');
+    router.push('/rfq/new');
   }, [router]);
 
   const fetchHomeData = useCallback(async () => {
@@ -170,7 +170,6 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       <Header />
 
-      {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 text-white">
         <div className="absolute inset-0 opacity-10 bg-[url('/grid.svg')]" />
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
@@ -245,7 +244,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Sunshine Pre-payment */}
             <div className="overflow-hidden rounded-3xl bg-white text-gray-900 shadow-2xl ring-1 ring-black/5">
               <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 px-6 py-4">
                 <div className="flex items-center justify-between">
@@ -301,7 +299,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Categories moved up */}
       <section className="border-b border-gray-100 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-5 flex items-center justify-between">
@@ -337,7 +334,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
       <section className="border-b border-gray-100 bg-slate-50">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
@@ -361,7 +357,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Popular services */}
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between">
@@ -428,7 +423,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Partners redesigned */}
       <section className="bg-slate-50 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between">

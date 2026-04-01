@@ -47,9 +47,7 @@ function parseNotes(notes?: string | null): {
     if (line.startsWith(META_PREFIX)) {
       try {
         meta = JSON.parse(line.replace(META_PREFIX, '')) as ParsedMeta;
-      } catch {
-        // ignore
-      }
+      } catch {}
       continue;
     }
 
@@ -231,17 +229,13 @@ export async function DELETE(
     }
 
     await prisma.$transaction(async (tx) => {
-      if (existing.files.length > 0) {
-        await tx.rFQFile.deleteMany({
-          where: { rfqId: id },
-        });
-      }
+      await tx.rFQFile.deleteMany({
+        where: { rfqId: id },
+      });
 
-      if (existing.messages.length > 0) {
-        await tx.rFQMessage.deleteMany({
-          where: { rfqId: id },
-        });
-      }
+      await tx.rFQMessage.deleteMany({
+        where: { rfqId: id },
+      });
 
       await tx.notification.deleteMany({
         where: {
