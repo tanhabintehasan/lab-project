@@ -1,263 +1,362 @@
-import { RFQStatus } from '@prisma/client';
-import { NextRequest } from 'next/server';
-import { z } from 'zod';
-import { prisma } from '@/lib/db';
-import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
+'use client';
 
-const META_PREFIX = '[META]';
-const ADMIN_NOTE_PREFIX = '[ADMIN_NOTE]';
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 
-type ParsedMeta = {
-  requestType: 'RFQ' | 'CUSTOM_TESTING';
-  sampleName?: string;
-  sampleCondition?: string;
-  testPurpose?: string;
-  testingStandard?: string;
-  expectedOutput?: 'REPORT' | 'REPORT_CERTIFICATE';
-  urgency?: 'NORMAL' | 'URGENT' | 'VERY_URGENT';
-  contactName?: string;
-  contactPhone?: string;
-  contactEmail?: string;
-};
+export default function RFQNewPage() {
+  const t = useTranslations('rfq');
+  const router = useRouter();
 
-const updateRFQSchema = z.object({
-  status: z.nativeEnum(RFQStatus).optional(),
-  adminNote: z.string().optional(),
-});
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [requestNo, setRequestNo] = useState('');
 
-function parseNotes(notes?: string | null): {
-  cleanRequirements: string;
-  adminNote: string;
-  meta: ParsedMeta;
-} {
-  if (!notes) {
-    return {
-      cleanRequirements: '',
-      adminNote: '',
-      meta: { requestType: 'RFQ' },
-    };
-  }
+  const [form, setForm] = useState({
+    title: '',
+    materialDesc: '',
+    productType: '',
+    testingTarget: '',
+    standardReq: '',
+    quantity: '',
+    deadline: '',
+    budget: '',
+    notes: '',
 
-  const lines = notes.split('\n');
-  let meta: ParsedMeta = { requestType: 'RFQ' };
-  let adminNote = '';
-  const contentLines: string[] = [];
+    contactName: '',
+    contactPhone: '',
+    contactEmail: '',
+    companyName: '',
+    wechat: '',
 
-  for (const line of lines) {
-    if (line.startsWith(META_PREFIX)) {
-      try {
-        meta = JSON.parse(line.replace(META_PREFIX, '')) as ParsedMeta;
-      } catch {
-        // ignore
-      }
-      continue;
+    sampleName: '',
+    sampleCondition: '',
+    testPurpose: '',
+    expectedOutput: 'REPORT',
+    urgency: 'NORMAL',
+  });
+
+  const update = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
     }
-
-    if (line.startsWith(ADMIN_NOTE_PREFIX)) {
-      adminNote = line.replace(ADMIN_NOTE_PREFIX, '').trim();
-      continue;
-    }
-
-    contentLines.push(line);
-  }
-
-  return {
-    cleanRequirements: contentLines.join('\n').trim(),
-    adminNote,
-    meta,
   };
-}
 
-function rebuildNotes(input: {
-  meta: ParsedMeta;
-  cleanRequirements: string;
-  adminNote?: string;
-}) {
-  const parts = [`${META_PREFIX}${JSON.stringify(input.meta)}`];
+  const resetForm = () => {
+    setForm({
+      title: '',
+      materialDesc: '',
+      productType: '',
+      testingTarget: '',
+      standardReq: '',
+      quantity: '',
+      deadline: '',
+      budget: '',
+      notes: '',
 
-  if (input.adminNote?.trim()) {
-    parts.push(`${ADMIN_NOTE_PREFIX}${input.adminNote.trim()}`);
-  }
+      contactName: '',
+      contactPhone: '',
+      contactEmail: '',
+      companyName: '',
+      wechat: '',
 
-  if (input.cleanRequirements?.trim()) {
-    parts.push(input.cleanRequirements.trim());
-  }
-
-  return parts.join('\n').trim();
-}
-
-function serializeRFQ(rfq: any) {
-  const { cleanRequirements, adminNote, meta } = parseNotes(rfq.notes);
-
-  return {
-    ...rfq,
-    requestType: meta.requestType || 'RFQ',
-    requirements: cleanRequirements,
-    adminNote,
-    sampleName: meta.sampleName || '',
-    sampleCondition: meta.sampleCondition || '',
-    testPurpose: meta.testPurpose || '',
-    testingStandard: meta.testingStandard || '',
-    expectedOutput: meta.expectedOutput || '',
-    urgency: meta.urgency || '',
-    contactName: meta.contactName || '',
-    contactPhone: meta.contactPhone || '',
-    contactEmail: meta.contactEmail || '',
-  };
-}
-
-function isAdminRole(role?: string) {
-  return !!role && !['CUSTOMER', 'ENTERPRISE_MEMBER'].includes(role);
-}
-
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const user = await getAuthUser(request);
-  if (!user) return errorResponse('未授权', 401);
-
-  const { id } = await context.params;
-
-  try {
-    const rfq = await prisma.rFQRequest.findUnique({
-      where: { id },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        files: true,
-        quotations: true,
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-        },
-      },
+      sampleName: '',
+      sampleCondition: '',
+      testPurpose: '',
+      expectedOutput: 'REPORT',
+      urgency: 'NORMAL',
     });
+    setRequestNo('');
+    setError('');
+    setSuccess(false);
+  };
 
-    if (!rfq) return errorResponse('需求不存在', 404);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (!isAdminRole(user.role) && rfq.userId !== user.userId) {
-      return errorResponse('无权限访问', 403);
+    if (!form.title.trim()) {
+      setError('请输入需求标题');
+      return;
     }
 
-    return successResponse(serializeRFQ(rfq));
-  } catch (error) {
-    console.error('RFQ detail fetch error:', error);
-    return errorResponse('获取需求详情失败', 500);
-  }
-}
+    if (!form.contactName.trim()) {
+      setError('请输入联系人');
+      return;
+    }
 
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const user = await getAuthUser(request);
-  if (!user) return errorResponse('未授权', 401);
+    if (!form.contactPhone.trim() && !form.contactEmail.trim()) {
+      setError('请至少填写联系电话或联系邮箱');
+      return;
+    }
 
-  if (!isAdminRole(user.role)) {
-    return errorResponse('仅管理员可操作', 403);
-  }
+    setLoading(true);
+    setError('');
 
-  const { id } = await context.params;
+    try {
+      const extraRequirements = [
+        form.notes?.trim(),
+        form.companyName?.trim() ? `公司名称：${form.companyName.trim()}` : '',
+        form.wechat?.trim() ? `微信号：${form.wechat.trim()}` : '',
+        form.budget?.trim() ? `预算范围：${form.budget.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
 
-  try {
-    const body = await request.json();
-    const data = updateRFQSchema.parse(body);
+      const res = await fetch('/api/rfq', {
+        credentials: 'include',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestType: 'CUSTOM_TESTING',
+          title: form.title,
+          material: form.materialDesc,
+          category: form.productType,
+          industry: form.testingTarget,
+          quantity: form.quantity,
+          requirements: extraRequirements,
+          deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
 
-    const existing = await prisma.rFQRequest.findUnique({
-      where: { id },
-    });
+          contactName: form.contactName,
+          contactPhone: form.contactPhone,
+          contactEmail: form.contactEmail,
 
-    if (!existing) return errorResponse('需求不存在', 404);
-
-    const parsed = parseNotes(existing.notes);
-
-    const updated = await prisma.rFQRequest.update({
-      where: { id },
-      data: {
-        status: data.status ?? existing.status,
-        notes: rebuildNotes({
-          meta: parsed.meta,
-          cleanRequirements: parsed.cleanRequirements,
-          adminNote: data.adminNote ?? parsed.adminNote,
+          sampleName: form.sampleName,
+          sampleCondition: form.sampleCondition,
+          testPurpose: form.testPurpose,
+          testingStandard: form.standardReq,
+          expectedOutput: form.expectedOutput,
+          urgency: form.urgency,
         }),
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        files: true,
-        quotations: true,
-      },
-    });
-
-    return successResponse(serializeRFQ(updated));
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return errorResponse(error.issues[0]?.message || '请求参数无效', 400);
-    }
-
-    console.error('RFQ patch error:', error);
-    return errorResponse('更新需求失败', 500);
-  }
-}
-
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const user = await getAuthUser(request);
-  if (!user) return errorResponse('未授权', 401);
-
-  if (!isAdminRole(user.role)) {
-    return errorResponse('仅管理员可删除', 403);
-  }
-
-  const { id } = await context.params;
-
-  try {
-    const existing = await prisma.rFQRequest.findUnique({
-      where: { id },
-      include: {
-        files: true,
-        quotations: { select: { id: true } },
-        messages: { select: { id: true } },
-      },
-    });
-
-    if (!existing) {
-      return errorResponse('需求不存在', 404);
-    }
-
-    if (existing.quotations.length > 0) {
-      return errorResponse('该需求已有报价，不能删除', 400);
-    }
-
-    await prisma.$transaction(async (tx) => {
-      if (existing.files.length > 0) {
-        await tx.rFQFile.deleteMany({
-          where: { rfqId: id },
-        });
-      }
-
-      if (existing.messages.length > 0) {
-        await tx.rFQMessage.deleteMany({
-          where: { rfqId: id },
-        });
-      }
-
-      await tx.notification.deleteMany({
-        where: {
-          userId: existing.userId,
-          link: '/dashboard/quotations',
-        },
       });
 
-      await tx.rFQRequest.delete({
-        where: { id },
-      });
-    });
+      const data = await res.json();
 
-    return successResponse({ id, deleted: true });
-  } catch (error) {
-    console.error('RFQ delete error:', error);
-    return errorResponse('删除需求失败', 500);
+      if (res.status === 401) {
+        router.push('/auth/login?redirect=/rfq/new');
+        return;
+      }
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || '提交失败');
+      }
+
+      setRequestNo(data?.data?.requestNo || '');
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '提交失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <CheckCircle2 className="h-8 w-8 text-green-600" />
+        </div>
+
+        <h1 className="mb-2 text-2xl font-bold text-gray-900">感谢您的提交</h1>
+        <p className="mb-2 text-gray-600">您的定制测试需求已成功提交，管理员后台已收到。</p>
+        <p className="mb-6 text-gray-600">我们会尽快通过您填写的联系方式与您联系。</p>
+
+        {requestNo ? (
+          <p className="mb-8 text-sm text-gray-500">需求编号：{requestNo}</p>
+        ) : null}
+
+        <div className="flex justify-center gap-3">
+          <Button onClick={() => router.push('/')}>返回首页</Button>
+          <Button variant="outline" onClick={resetForm}>
+            再提交一条
+          </Button>
+        </div>
+      </div>
+    );
   }
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-blue-600"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          返回
+        </button>
+      </div>
+
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">定制测试需求</h1>
+
+      {error ? (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card padding="lg">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">联系人信息</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="联系人"
+              required
+              value={form.contactName}
+              onChange={(e) => update('contactName', e.target.value)}
+            />
+            <Input
+              label="联系电话"
+              value={form.contactPhone}
+              onChange={(e) => update('contactPhone', e.target.value)}
+            />
+            <Input
+              label="联系邮箱"
+              type="email"
+              value={form.contactEmail}
+              onChange={(e) => update('contactEmail', e.target.value)}
+            />
+            <Input
+              label="公司名称"
+              value={form.companyName}
+              onChange={(e) => update('companyName', e.target.value)}
+            />
+            <Input
+              label="微信号"
+              value={form.wechat}
+              onChange={(e) => update('wechat', e.target.value)}
+            />
+          </div>
+        </Card>
+
+        <Card padding="lg">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">需求信息</h2>
+          <div className="space-y-4">
+            <Input
+              label={t('form.title')}
+              required
+              value={form.title}
+              onChange={(e) => update('title', e.target.value)}
+            />
+
+            <Textarea
+              label={t('form.material')}
+              value={form.materialDesc}
+              onChange={(e) => update('materialDesc', e.target.value)}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label={t('form.productType')}
+                value={form.productType}
+                onChange={(e) => update('productType', e.target.value)}
+              />
+              <Input
+                label={t('form.standard')}
+                value={form.standardReq}
+                onChange={(e) => update('standardReq', e.target.value)}
+              />
+            </div>
+
+            <Textarea
+              label={t('form.testingTarget')}
+              value={form.testingTarget}
+              onChange={(e) => update('testingTarget', e.target.value)}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Input
+                label={t('form.quantity')}
+                value={form.quantity}
+                onChange={(e) => update('quantity', e.target.value)}
+              />
+              <Input
+                label={t('form.deadline')}
+                type="date"
+                value={form.deadline}
+                onChange={(e) => update('deadline', e.target.value)}
+              />
+              <Input
+                label={t('form.budget')}
+                value={form.budget}
+                onChange={(e) => update('budget', e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="样品名称"
+                value={form.sampleName}
+                onChange={(e) => update('sampleName', e.target.value)}
+              />
+              <Input
+                label="样品状态"
+                value={form.sampleCondition}
+                onChange={(e) => update('sampleCondition', e.target.value)}
+              />
+            </div>
+
+            <Input
+              label="测试目的"
+              value={form.testPurpose}
+              onChange={(e) => update('testPurpose', e.target.value)}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">期望输出</label>
+                <select
+                  value={form.expectedOutput}
+                  onChange={(e) => update('expectedOutput', e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="REPORT">仅报告</option>
+                  <option value="REPORT_CERTIFICATE">报告 + 证书</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">紧急程度</label>
+                <select
+                  value={form.urgency}
+                  onChange={(e) => update('urgency', e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="NORMAL">普通</option>
+                  <option value="URGENT">加急</option>
+                  <option value="VERY_URGENT">特急</option>
+                </select>
+              </div>
+            </div>
+
+            <Textarea
+              label={t('form.notes')}
+              rows={6}
+              value={form.notes}
+              onChange={(e) => update('notes', e.target.value)}
+            />
+          </div>
+        </Card>
+
+        <div className="flex gap-3 pt-2">
+          <Button type="button" variant="outline" size="lg" onClick={handleBack}>
+            返回
+          </Button>
+          <Button type="submit" loading={loading} size="lg">
+            提交定制测试
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
 }
