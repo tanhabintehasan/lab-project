@@ -1,0 +1,1406 @@
+// Laboratory Testing Platform - Complete Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// USER & AUTH MODELS
+// ============================================================
+
+enum UserRole {
+  VISITOR
+  CUSTOMER
+  ENTERPRISE_MEMBER
+  LAB_PARTNER
+  TECHNICIAN
+  FINANCE_ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  phone         String?    @unique
+  passwordHash  String
+  name          String
+  avatar        String?
+  role          UserRole   @default(CUSTOMER)
+  status        UserStatus @default(ACTIVE)
+  locale        String     @default("zh-CN")
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  company            CompanyMembership?
+  addresses          Address[]
+  orders             Order[]
+  rfqRequests        RFQRequest[]
+  wallet             Wallet?
+  referralCode       ReferralCode?
+  referredBy         Referral?              @relation("ReferredUser")
+  referrals          Referral[]             @relation("ReferrerUser")
+  notifications      Notification[]
+  messages           Message[]
+  favorites          Favorite[]
+  invoiceProfiles    InvoiceProfile[]
+  auditLogs          AuditLog[]
+  labUser            LabUser?
+  technicianTasks    TechnicianTask[]
+  reportDownloads    ReportDownload[]
+  sessions           Session[]
+  equipmentBookings  EquipmentBooking[]
+  quotations         Quotation[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+}
+
+model Session {
+  id                 String   @id @default(cuid())
+  userId             String
+  token              String   @unique
+  expiresAt          DateTime
+  ipAddress          String?
+  userAgent          String?
+  csrfToken          String?
+  csrfTokenExpiresAt DateTime?
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  label      String? // e.g. "办公室", "实验室"
+  name       String
+  phone      String
+  province   String
+  city       String
+  district   String
+  street     String
+  postalCode String?
+  isDefault  Boolean @default(false)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+}
+
+model InvoiceProfile {
+  id          String  @id @default(cuid())
+  userId      String
+  companyName String
+  taxNumber   String
+  bankName    String?
+  bankAccount String?
+  address     String?
+  phone       String?
+  isDefault   Boolean @default(false)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+
+  @@index([userId])
+}
+
+// ============================================================
+// COMPANY / ENTERPRISE MODELS
+// ============================================================
+
+enum CompanyStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+model Company {
+  id                String        @id @default(cuid())
+  name              String
+  registrationNo    String?
+  industry          String?
+  size              String?
+  address           String?
+  contactPerson     String?
+  contactPhone      String?
+  contactEmail      String?
+  logo              String?
+  businessLicense   String?
+  status            CompanyStatus @default(PENDING)
+  contractPricing   Boolean       @default(false)
+  billingEnabled    Boolean       @default(false)
+  approvalRequired  Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  members CompanyMembership[]
+  wallet  CompanyWallet?
+
+  @@index([name])
+}
+
+model CompanyMembership {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  companyId String
+  role      String   @default("member") // owner, admin, member
+  joinedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+// ============================================================
+// SERVICE CATALOG MODELS
+// ============================================================
+
+model ServiceCategory {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  nameZh      String
+  nameEn      String?
+  descZh      String?
+  descEn      String?
+  icon        String?
+  image       String?
+  parentId    String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+  seoTitleZh  String?
+  seoTitleEn  String?
+  seoDescZh   String?
+  seoDescEn   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   ServiceCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children ServiceCategory[] @relation("CategoryTree")
+  services TestingService[]
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model Material {
+  id       String  @id @default(cuid())
+  slug     String  @unique
+  nameZh   String
+  nameEn   String?
+  descZh   String?
+  descEn   String?
+  icon     String?
+  image    String?
+  isActive Boolean @default(true)
+  sortOrder Int    @default(0)
+
+  services ServiceMaterial[]
+
+  @@index([slug])
+}
+
+model Industry {
+  id       String  @id @default(cuid())
+  slug     String  @unique
+  nameZh   String
+  nameEn   String?
+  descZh   String?
+  descEn   String?
+  icon     String?
+  image    String?
+  isActive Boolean @default(true)
+  sortOrder Int    @default(0)
+
+  services ServiceIndustry[]
+
+  @@index([slug])
+}
+
+model TestingStandard {
+  id           String  @id @default(cuid())
+  code         String  @unique // e.g. "GB/T 228.1-2021"
+  nameZh       String
+  nameEn       String?
+  organization String? // e.g. "GB", "ISO", "ASTM"
+  descZh       String?
+  descEn       String?
+  isActive     Boolean @default(true)
+
+  services ServiceStandard[]
+
+  @@index([code])
+}
+
+enum PricingModel {
+  FIXED
+  RANGE
+  QUOTE_ONLY
+  TIERED
+}
+
+model TestingService {
+  id                String       @id @default(cuid())
+  slug              String       @unique
+  categoryId        String
+  nameZh            String
+  nameEn            String?
+  shortDescZh       String?
+  shortDescEn       String?
+  fullDescZh        String?      @db.Text
+  fullDescEn        String?      @db.Text
+  pricingModel      PricingModel @default(FIXED)
+  priceMin          Decimal?     @db.Decimal(12, 2)
+  priceMax          Decimal?     @db.Decimal(12, 2)
+  currency          String       @default("CNY")
+  turnaroundDays    Int?
+  turnaroundDesc    String?
+  sampleRequirement String?      @db.Text
+  deliverables      String?      @db.Text
+  isActive          Boolean      @default(true)
+  isFeatured        Boolean      @default(false)
+  isHot             Boolean      @default(false)
+  sortOrder         Int          @default(0)
+  seoTitleZh        String?
+  seoTitleEn        String?
+  seoDescZh         String?
+  seoDescEn         String?
+  viewCount         Int          @default(0)
+  orderCount        Int          @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  category   ServiceCategory   @relation(fields: [categoryId], references: [id])
+  materials  ServiceMaterial[]
+  industries ServiceIndustry[]
+  standards  ServiceStandard[]
+  orderItems OrderItem[]
+  favorites  Favorite[]
+  bundles    ServiceBundle[]    @relation("BundleServices")
+  labServices LabService[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([isActive, isFeatured])
+}
+
+model ServiceMaterial {
+  serviceId  String
+  materialId String
+
+  service  TestingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  material Material       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, materialId])
+}
+
+model ServiceIndustry {
+  serviceId  String
+  industryId String
+
+  service  TestingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  industry Industry       @relation(fields: [industryId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, industryId])
+}
+
+model ServiceStandard {
+  serviceId  String
+  standardId String
+
+  service  TestingService  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  standard TestingStandard @relation(fields: [standardId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, standardId])
+}
+
+model ServiceBundle {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  nameZh      String
+  nameEn      String?
+  descZh      String?
+  descEn      String?
+  price       Decimal? @db.Decimal(12, 2)
+  discount    Decimal? @db.Decimal(5, 2)
+  isActive    Boolean  @default(true)
+
+  services TestingService[] @relation("BundleServices")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  serviceId String
+  createdAt DateTime @default(now())
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service TestingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceId])
+}
+
+// ============================================================
+// RFQ / QUOTATION MODELS
+// ============================================================
+
+enum RFQStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  INFO_REQUESTED
+  QUOTING
+  QUOTED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  CONVERTED
+}
+
+model RFQRequest {
+  id              String    @id @default(cuid())
+  requestNo       String    @unique
+  userId          String
+  title           String
+  materialDesc    String?   @db.Text
+  productType     String?
+  testingTarget   String?   @db.Text
+  issue           String?   @db.Text
+  standardReq     String?
+  quantity        String?
+  deadline        DateTime?
+  budget          String?
+  notes           String?   @db.Text
+  status          RFQStatus @default(SUBMITTED)
+  assignedTo      String?
+  assignedLabId   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user       User         @relation(fields: [userId], references: [id])
+  lab        Laboratory?  @relation(fields: [assignedLabId], references: [id])
+  files      RFQFile[]
+  quotations Quotation[]
+  messages   RFQMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestNo])
+}
+
+model RFQFile {
+  id        String   @id @default(cuid())
+  rfqId     String
+  fileName  String
+  fileUrl   String
+  fileType  String?
+  fileSize  Int?
+  version   Int      @default(1)
+  uploadedAt DateTime @default(now())
+
+  rfq RFQRequest @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+}
+
+model RFQMessage {
+  id        String   @id @default(cuid())
+  rfqId     String
+  senderId  String
+  content   String   @db.Text
+  isInternal Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  rfq RFQRequest @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+  REVISED
+  EXPIRED
+  CONVERTED
+}
+
+model Quotation {
+  id           String          @id @default(cuid())
+  quotationNo  String          @unique
+  rfqId        String?
+  userId       String
+  title        String
+  items        Json // QuotationItem[]
+  totalAmount  Decimal         @db.Decimal(12, 2)
+  currency     String          @default("CNY")
+  validUntil   DateTime?
+  notes        String?         @db.Text
+  termsZh      String?         @db.Text
+  termsEn      String?         @db.Text
+  status       QuotationStatus @default(DRAFT)
+  version      Int             @default(1)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  rfq       RFQRequest? @relation(fields: [rfqId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+  revisions QuotationRevision[]
+
+  @@index([rfqId])
+  @@index([userId])
+  @@index([quotationNo])
+}
+
+model QuotationRevision {
+  id          String   @id @default(cuid())
+  quotationId String
+  version     Int
+  items       Json
+  totalAmount Decimal  @db.Decimal(12, 2)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+}
+
+// ============================================================
+// ORDER MODELS
+// ============================================================
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SAMPLE_PENDING
+  SAMPLE_SHIPPED
+  SAMPLE_RECEIVED
+  SAMPLE_INSPECTED
+  TESTING_IN_PROGRESS
+  TESTING_COMPLETE
+  REPORT_GENERATING
+  REPORT_APPROVED
+  REPORT_DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDING
+  REFUNDED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  REFUND_PENDING
+  REFUNDED
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  orderNo       String        @unique
+  userId        String
+  addressId     String?
+  status        OrderStatus   @default(PENDING_PAYMENT)
+  paymentStatus PaymentStatus @default(UNPAID)
+  totalAmount   Decimal       @db.Decimal(12, 2)
+  paidAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  currency      String        @default("CNY")
+  notes         String?       @db.Text
+  assignedLabId String?
+  assignedTo    String?
+  quotationId   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id])
+  address  Address?    @relation(fields: [addressId], references: [id])
+  lab      Laboratory? @relation(fields: [assignedLabId], references: [id])
+  items    OrderItem[]
+  samples  Sample[]
+  payments Payment[]
+  timeline OrderTimeline[]
+  reports  Report[]
+  invoices Invoice[]
+  documents OrderDocument[]
+
+  @@index([userId])
+  @@index([orderNo])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  serviceId String
+  quantity  Int     @default(1)
+  unitPrice Decimal @db.Decimal(12, 2)
+  subtotal  Decimal @db.Decimal(12, 2)
+  notes     String?
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service TestingService @relation(fields: [serviceId], references: [id])
+
+  @@index([orderId])
+}
+
+model OrderTimeline {
+  id          String   @id @default(cuid())
+  orderId     String
+  status      String
+  title       String
+  description String?
+  operator    String?
+  createdAt   DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderDocument {
+  id        String   @id @default(cuid())
+  orderId   String
+  fileName  String
+  fileUrl   String
+  fileType  String?
+  fileSize  Int?
+  uploadedBy String
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ============================================================
+// SAMPLE MODELS
+// ============================================================
+
+enum SampleStatus {
+  PENDING_SUBMISSION
+  SHIPPED
+  RECEIVED
+  INSPECTING
+  INSPECTION_PASSED
+  INSPECTION_FAILED
+  TESTING
+  TESTING_COMPLETE
+  STORED
+  RETURNED
+  DISPOSED
+}
+
+model Sample {
+  id            String       @id @default(cuid())
+  sampleNo      String       @unique
+  orderId       String
+  name          String
+  description   String?
+  materialType  String?
+  quantity      String?
+  condition     String?
+  status        SampleStatus @default(PENDING_SUBMISSION)
+  trackingNo    String?
+  courier       String?
+  shippedAt     DateTime?
+  receivedAt    DateTime?
+  receivedBy    String?
+  notes         String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  order    Order            @relation(fields: [orderId], references: [id])
+  photos   SamplePhoto[]
+  timeline SampleTimeline[]
+
+  @@index([orderId])
+  @@index([sampleNo])
+  @@index([status])
+}
+
+model SamplePhoto {
+  id        String   @id @default(cuid())
+  sampleId  String
+  photoUrl  String
+  caption   String?
+  uploadedAt DateTime @default(now())
+
+  sample Sample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  @@index([sampleId])
+}
+
+model SampleTimeline {
+  id          String   @id @default(cuid())
+  sampleId    String
+  status      String
+  title       String
+  description String?
+  operator    String?
+  createdAt   DateTime @default(now())
+
+  sample Sample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  @@index([sampleId])
+}
+
+// ============================================================
+// REPORT MODELS
+// ============================================================
+
+enum ReportStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Report {
+  id            String       @id @default(cuid())
+  reportNo      String       @unique
+  orderId       String
+  title         String
+  summaryZh     String?      @db.Text
+  summaryEn     String?      @db.Text
+  fileUrl       String?
+  status        ReportStatus @default(DRAFT)
+  issuedAt      DateTime?
+  expiresAt     DateTime?
+  watermark     Boolean      @default(false)
+  downloadCount Int          @default(0)
+  viewCount     Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  order       Order              @relation(fields: [orderId], references: [id])
+  attachments ReportAttachment[]
+  downloads   ReportDownload[]
+  shareLinks  ReportShareLink[]
+
+  @@index([orderId])
+  @@index([reportNo])
+}
+
+model ReportAttachment {
+  id        String   @id @default(cuid())
+  reportId  String
+  fileName  String
+  fileUrl   String
+  fileType  String?
+  fileSize  Int?
+  createdAt DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+model ReportDownload {
+  id         String   @id @default(cuid())
+  reportId   String
+  userId     String
+  ipAddress  String?
+  downloadedAt DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([reportId])
+}
+
+model ReportShareLink {
+  id        String   @id @default(cuid())
+  reportId  String
+  token     String   @unique
+  expiresAt DateTime
+  maxViews  Int?
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+// ============================================================
+// LABORATORY MODELS
+// ============================================================
+
+enum LabStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+model Laboratory {
+  id                String    @id @default(cuid())
+  slug              String    @unique
+  nameZh            String
+  nameEn            String?
+  shortDescZh       String?
+  shortDescEn       String?
+  fullDescZh        String?   @db.Text
+  fullDescEn        String?   @db.Text
+  address           String?
+  city              String?
+  province          String?
+  phone             String?
+  email             String?
+  website           String?
+  logo              String?
+  coverImage        String?
+  certifications    Json?     // array of cert objects
+  specialties       Json?     // array of specialty strings
+  status            LabStatus @default(PENDING)
+  rating            Decimal?  @db.Decimal(3, 2)
+  completedOrders   Int       @default(0)
+  avgTurnaroundDays Decimal?  @db.Decimal(5, 1)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  users      LabUser[]
+  services   LabService[]
+  equipment  Equipment[]
+  orders     Order[]
+  rfqs       RFQRequest[]
+  media      LabMedia[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+model LabUser {
+  id     String @id @default(cuid())
+  userId String @unique
+  labId  String
+  role   String @default("staff") // admin, manager, staff
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab  Laboratory @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@index([labId])
+}
+
+model LabService {
+  id        String @id @default(cuid())
+  labId     String
+  serviceId String
+  isActive  Boolean @default(true)
+
+  lab     Laboratory     @relation(fields: [labId], references: [id], onDelete: Cascade)
+  service TestingService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([labId, serviceId])
+}
+
+model LabMedia {
+  id        String   @id @default(cuid())
+  labId     String
+  type      String   // image, video, certificate
+  url       String
+  caption   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  lab Laboratory @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@index([labId])
+}
+
+// ============================================================
+// EQUIPMENT MODELS
+// ============================================================
+
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  UNAVAILABLE
+}
+
+model Equipment {
+  id              String          @id @default(cuid())
+  slug            String          @unique
+  labId           String?
+  nameZh          String
+  nameEn          String?
+  model           String?
+  manufacturer    String?
+  descZh          String?         @db.Text
+  descEn          String?         @db.Text
+  specifications  Json?
+  certifications  Json?
+  images          Json?           // array of image URLs
+  videoUrl        String?
+  usageInstructions String?       @db.Text
+  status          EquipmentStatus @default(AVAILABLE)
+  bookable        Boolean         @default(false)
+  hourlyRate      Decimal?        @db.Decimal(12, 2)
+  dailyRate       Decimal?        @db.Decimal(12, 2)
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  lab      Laboratory?        @relation(fields: [labId], references: [id])
+  bookings EquipmentBooking[]
+  schedule EquipmentSchedule[]
+
+  @@index([slug])
+  @@index([labId])
+  @@index([status])
+}
+
+model EquipmentBooking {
+  id          String   @id @default(cuid())
+  equipmentId String
+  userId      String
+  startTime   DateTime
+  endTime     DateTime
+  purpose     String?
+  status      String   @default("pending") // pending, approved, rejected, cancelled, completed
+  totalPrice  Decimal? @db.Decimal(12, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([equipmentId])
+  @@index([userId])
+}
+
+model EquipmentSchedule {
+  id          String   @id @default(cuid())
+  equipmentId String
+  type        String   // maintenance, blocked, reserved
+  startTime   DateTime
+  endTime     DateTime
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+}
+
+// ============================================================
+// PAYMENT & WALLET MODELS
+// ============================================================
+
+enum PaymentMethod {
+  WALLET
+  WECHAT_PAY
+  ALIPAY
+  BANK_TRANSFER
+  ENTERPRISE_BILLING
+}
+
+enum TransactionType {
+  RECHARGE
+  PAYMENT
+  REFUND
+  WITHDRAWAL
+  COMMISSION
+  ADJUSTMENT
+}
+
+model Wallet {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  balance      Decimal @default(0) @db.Decimal(12, 2)
+  frozenAmount Decimal @default(0) @db.Decimal(12, 2)
+  currency     String  @default("CNY")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model CompanyWallet {
+  id           String  @id @default(cuid())
+  companyId    String  @unique
+  balance      Decimal @default(0) @db.Decimal(12, 2)
+  frozenAmount Decimal @default(0) @db.Decimal(12, 2)
+  creditLimit  Decimal @default(0) @db.Decimal(12, 2)
+  currency     String  @default("CNY")
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  walletId        String?
+  companyWalletId String?
+  type            TransactionType
+  amount          Decimal         @db.Decimal(12, 2)
+  balanceAfter    Decimal?        @db.Decimal(12, 2)
+  description     String?
+  referenceType   String?
+  referenceId     String?
+  createdAt       DateTime        @default(now())
+
+  wallet        Wallet?        @relation(fields: [walletId], references: [id])
+  companyWallet CompanyWallet? @relation(fields: [companyWalletId], references: [id])
+
+  @@index([walletId])
+  @@index([companyWalletId])
+}
+
+model Payment {
+  id              String         @id @default(cuid())
+  orderId         String
+  providerId      String?        // Link to PaymentProvider
+  method          PaymentMethod
+  amount          Decimal        @db.Decimal(12, 2)
+  currency        String         @default("CNY")
+  status          String         @default("pending") // pending, processing, success, failed, refunded, expired
+  transactionId   String?
+  externalNo      String?        // Provider's transaction ID
+  notifyData      Json?          // Raw webhook/notify data
+  verifiedAt      DateTime?      // When payment was verified by webhook
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  refundAmount    Decimal?       @db.Decimal(12, 2)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+
+  order    Order             @relation(fields: [orderId], references: [id])
+  provider PaymentProvider?  @relation(fields: [providerId], references: [id])
+
+  @@index([orderId])
+  @@index([providerId])
+  @@index([externalNo])
+  @@index([status])
+}
+
+model Invoice {
+  id               String   @id @default(cuid())
+  invoiceNo        String   @unique
+  orderId          String?
+  invoiceProfileId String?
+  type             String   @default("普通发票") // 普通发票, 增值税专用发票
+  amount           Decimal  @db.Decimal(12, 2)
+  status           String   @default("pending") // pending, issued, cancelled
+  fileUrl          String?
+  issuedAt         DateTime?
+  createdAt        DateTime @default(now())
+
+  order          Order?          @relation(fields: [orderId], references: [id])
+  invoiceProfile InvoiceProfile? @relation(fields: [invoiceProfileId], references: [id])
+
+  @@index([orderId])
+}
+
+model WithdrawalRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  amount     Decimal  @db.Decimal(12, 2)
+  method     String   // bank_transfer, alipay, wechat
+  accountInfo Json
+  status     String   @default("pending") // pending, approved, processing, completed, rejected
+  processedAt DateTime?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================
+// REFERRAL / COMMISSION MODELS
+// ============================================================
+
+model ReferralCode {
+  id     String @id @default(cuid())
+  userId String @unique
+  code   String @unique
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+
+  @@index([code])
+}
+
+model Referral {
+  id             String   @id @default(cuid())
+  referralCodeId String
+  referredUserId String   @unique
+  referrerUserId String
+  status         String   @default("registered") // registered, qualified, rewarded
+  createdAt      DateTime @default(now())
+
+  referralCode ReferralCode @relation(fields: [referralCodeId], references: [id])
+  referredUser User         @relation("ReferredUser", fields: [referredUserId], references: [id])
+  referrerUser User         @relation("ReferrerUser", fields: [referrerUserId], references: [id])
+  commissions  Commission[]
+
+  @@index([referrerUserId])
+}
+
+model Commission {
+  id         String   @id @default(cuid())
+  referralId String
+  orderId    String?
+  amount     Decimal  @db.Decimal(12, 2)
+  rate       Decimal  @db.Decimal(5, 4)
+  status     String   @default("pending") // pending, frozen, released, paid, cancelled
+  releasedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  referral Referral @relation(fields: [referralId], references: [id])
+
+  @@index([referralId])
+  @@index([status])
+}
+
+model ReferralConfig {
+  id                    String  @id @default(cuid())
+  registrationReward    Decimal @default(0) @db.Decimal(12, 2)
+  commissionRate        Decimal @default(0.05) @db.Decimal(5, 4)
+  minWithdrawalAmount   Decimal @default(100) @db.Decimal(12, 2)
+  frozenDays            Int     @default(30)
+  maxTiers              Int     @default(1)
+  isActive              Boolean @default(true)
+}
+
+// ============================================================
+// NOTIFICATION & MESSAGING
+// ============================================================
+
+enum NotificationType {
+  SYSTEM
+  ORDER
+  QUOTATION
+  SAMPLE
+  REPORT
+  WALLET
+  REFERRAL
+  PROMOTION
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  titleZh   String
+  titleEn   String?
+  contentZh String           @db.Text
+  contentEn String?          @db.Text
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([type])
+}
+
+model Message {
+  id           String   @id @default(cuid())
+  conversationId String
+  senderId     String
+  content      String   @db.Text
+  attachments  Json?
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  sender User @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model Conversation {
+  id           String   @id @default(cuid())
+  type         String   // support, rfq, order
+  referenceId  String?
+  participants Json     // array of user IDs
+  lastMessage  String?
+  lastMessageAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([type, referenceId])
+}
+
+// ============================================================
+// CMS & CONTENT
+// ============================================================
+
+model CMSPage {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  type        String   // page, article, faq, banner, news
+  titleZh     String
+  titleEn     String?
+  contentZh   String?  @db.Text
+  contentEn   String?  @db.Text
+  excerpt     String?
+  coverImage  String?
+  metadata    Json?
+  isPublished Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([type, isPublished])
+}
+
+model Translation {
+  id       String @id @default(cuid())
+  key      String
+  locale   String
+  value    String @db.Text
+  category String?
+
+  @@unique([key, locale])
+  @@index([category])
+}
+
+// ============================================================
+// TECHNICIAN TASK
+// ============================================================
+
+model TechnicianTask {
+  id          String   @id @default(cuid())
+  userId      String
+  orderId     String?
+  sampleId    String?
+  type        String   // sample_intake, testing, review, report_prep
+  title       String
+  description String?
+  priority    Int      @default(0)
+  status      String   @default("pending") // pending, in_progress, completed, blocked
+  dueDate     DateTime?
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([orderId])
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// PAYMENT PROVIDERS (DYNAMIC CONFIGURATION)
+// ============================================================
+
+enum PaymentProviderType {
+  WECHAT_PAY
+  ALIPAY
+  UNION_PAY
+  BANK_TRANSFER
+  MANUAL_QR      // New: Manual QR code payment
+}
+
+enum ProviderMode {
+  SANDBOX
+  LIVE
+}
+
+model PaymentProvider {
+  id               String              @id @default(cuid())
+  name             String              // User-friendly name
+  nameEn           String?             // English name for bilingual support
+  type             PaymentProviderType
+  appId            String?
+  merchantId       String?
+  apiKey           String?             // Encrypted
+  apiSecret        String?             // Encrypted
+  privateKey       String?             // Encrypted
+  publicKey        String?
+  certSerialNo     String?
+  notifyUrl        String?
+  mode             ProviderMode        @default(SANDBOX)
+  isEnabled        Boolean             @default(false)
+  isDefault        Boolean             @default(false)
+  
+  // Manual payment fields (for MANUAL_QR and BANK_TRANSFER)
+  qrCodeUrl        String?             // QR code image URL
+  instructionsZh   String?             // Chinese instructions
+  instructionsEn   String?             // English instructions
+  bankName         String?             // Bank name for transfers
+  bankAccount      String?             // Bank account number
+  accountHolder    String?             // Account holder name
+  
+  // Payment limits and display
+  minAmount        Decimal?            @db.Decimal(12, 2)
+  maxAmount        Decimal?            @db.Decimal(12, 2)
+  supportedCurrency String             @default("CNY")
+  displayOrder     Int                 @default(0)
+  
+  config           Json?               // Additional provider-specific config
+  lastTestedAt     DateTime?
+  lastTestResult   String?
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  payments Payment[]
+
+  @@index([type])
+  @@index([isEnabled])
+  @@index([displayOrder])
+}
+
+// ============================================================
+// INTEGRATION SETTINGS (GENERIC)
+// ============================================================
+
+enum IntegrationType {
+  SMS
+  EMAIL
+  STORAGE
+  OAUTH
+  CAPTCHA
+}
+
+model IntegrationSetting {
+  id               String          @id @default(cuid())
+  name             String          // User-friendly name
+  type             IntegrationType
+  provider         String          // e.g., "aliyun_sms", "sendgrid", "aliyun_oss"
+  apiKey           String?         // Encrypted
+  apiSecret        String?         // Encrypted
+  accessKey        String?         // Encrypted
+  accessSecret     String?         // Encrypted
+  endpoint         String?
+  region           String?
+  bucket           String?
+  config           Json?           // Additional provider-specific config
+  isEnabled        Boolean         @default(false)
+  isDefault        Boolean         @default(false)
+  mode             ProviderMode    @default(SANDBOX)
+  lastTestedAt     DateTime?
+  lastTestResult   String?
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([type])
+  @@index([isEnabled])
+}
+
+// ============================================================
+// PASSWORD RESET & OTP
+// ============================================================
+
+model PasswordResetToken {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique // Hashed token, not plain
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model OTPCode {
+  id           String   @id @default(cuid())
+  identifier   String   // phone or email
+  codeHash     String   // Hashed OTP
+  type         String   // "login", "reset", "verify"
+  expiresAt    DateTime
+  attemptCount Int      @default(0)
+  verifiedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([identifier, type])
+  @@index([expiresAt])
+}
+
+// ============================================================
+// RATE LIMITING (PERSISTENT)
+// ============================================================
+
+model RateLimitEntry {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "login:192.168.1.1" or "otp:phone:+8613800138000"
+  count       Int      @default(0)
+  resetAt     DateTime
+  blockedUntil DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([resetAt])
+}
+
+// ============================================================
+// WEBHOOK LOGS
+// ============================================================
+
+model WebhookLog {
+  id             String   @id @default(cuid())
+  provider       String
+  eventType      String?
+  payload        String   // Raw payload
+  signature      String?
+  isVerified     Boolean
+  processedAt    DateTime?
+  errorMessage   String?
+  relatedEntity  String?  // e.g., "Payment"
+  relatedId      String?  // payment ID
+  createdAt      DateTime @default(now())
+
+  @@index([provider])
+  @@index([createdAt])
+  @@index([relatedEntity, relatedId])
+}

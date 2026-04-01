@@ -1,172 +1,269 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Timeline } from '@/components/ui/timeline';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Link } from '@/i18n/routing';
-import { ArrowLeft } from 'lucide-react';
-import { formatDateTime } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { FileUpload } from '@/components/ui/file-upload';
+import { CheckCircle2 } from 'lucide-react';
 
-export default function RFQDetailPage() {
-  const params = useParams();
-  const [rfq, setRfq] = useState<Record<string, unknown> | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function CustomTestingPage() {
+  const router = useRouter();
+  const [form, setForm] = useState({
+    requestType: 'CUSTOM_TESTING',
+    title: '',
+    category: '',
+    material: '',
+    industry: '',
+    quantity: '',
+    sampleName: '',
+    sampleCondition: '',
+    testPurpose: '',
+    testingStandard: '',
+    expectedOutput: 'REPORT',
+    urgency: 'NORMAL',
+    requirements: '',
+    deadline: '',
+    contactName: '',
+    contactPhone: '',
+    contactEmail: '',
+  });
 
-  useEffect(() => {
-    fetch(`/api/rfq?id=${params.id}`, {
-      credentials: 'include',
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success && data.data) {
-          setRfq(Array.isArray(data.data) ? data.data[0] : data.data);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [params.id]);
+  const [files, setFiles] = useState<Array<{ url: string; name: string }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  if (loading) {
+  const handleUploadComplete = (uploadedFiles: Array<{ url: string; name: string }>) => {
+    setFiles((prev) => [...prev, ...uploadedFiles]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/rfq', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          attachments: files.map((f) => ({ url: f.url, fileName: f.name })),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => router.push('/dashboard/quotations'), 2000);
+      }
+    } catch (error) {
+      console.error('Custom testing submit error:', error);
+    }
+
+    setLoading(false);
+  };
+
+  if (success) {
     return (
       <DashboardLayout>
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-1/3" />
-          <Skeleton className="h-48 w-full" />
+        <div className="max-w-2xl mx-auto py-12 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+            <CheckCircle2 className="h-8 w-8 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">定制检测需求已提交</h1>
+          <p className="text-gray-600 mb-6">后台已收到您的定制测试申请，我们将尽快审核并联系您</p>
+          <Button onClick={() => router.push('/dashboard/quotations')}>
+            查看我的申请
+          </Button>
         </div>
       </DashboardLayout>
     );
   }
-
-  if (!rfq) {
-    return (
-      <DashboardLayout>
-        <div className="text-center py-16">
-          <p className="text-gray-500">需求未找到</p>
-          <Link href="/rfq" className="text-blue-600 mt-4 inline-block">
-            返回列表
-          </Link>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const title = rfq.title as string;
-  const requestNo = rfq.requestNo as string;
-  const status = rfq.status as string;
-  const materialDesc = rfq.materialDesc as string | undefined;
-  const productType = rfq.productType as string | undefined;
-  const testingTarget = rfq.testingTarget as string | undefined;
-  const standardReq = rfq.standardReq as string | undefined;
-  const quantity = rfq.quantity as string | number | undefined;
-  const budget = rfq.budget as string | number | undefined;
-  const deadline = rfq.deadline as string | undefined;
-  const notes = rfq.notes as string | undefined;
-  const createdAt = rfq.createdAt as string;
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <Link
-          href="/rfq"
-          className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          返回列表
-        </Link>
-
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            <p className="text-sm text-gray-500 mt-1">编号: {requestNo}</p>
-          </div>
-          <Badge variant="info">{status}</Badge>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">定制检测需求</h1>
+          <p className="text-gray-600 mt-1">
+            填写您的特殊测试需求，后台审核后会安排报价与测试方案
+          </p>
         </div>
 
-        <Card padding="lg">
-          <h2 className="font-semibold text-gray-900 mb-4">需求详情</h2>
-          <div className="grid sm:grid-cols-2 gap-4 text-sm">
-            {materialDesc ? (
-              <div>
-                <span className="text-gray-500">材料描述:</span>
-                <p className="text-gray-900 mt-1">{materialDesc}</p>
-              </div>
-            ) : null}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">基本信息</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Input
+                label="项目名称"
+                required
+                value={form.title}
+                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                placeholder="例如：高温合金疲劳寿命定制测试"
+              />
+              <Input
+                label="服务分类"
+                required
+                value={form.category}
+                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                placeholder="例如：定制材料测试"
+              />
+              <Input
+                label="材料类型"
+                value={form.material}
+                onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))}
+                placeholder="例如：钛合金"
+              />
+              <Input
+                label="应用行业"
+                value={form.industry}
+                onChange={(e) => setForm((p) => ({ ...p, industry: e.target.value }))}
+                placeholder="例如：航空航天"
+              />
+              <Input
+                label="样品名称"
+                value={form.sampleName}
+                onChange={(e) => setForm((p) => ({ ...p, sampleName: e.target.value }))}
+                placeholder="例如：焊接试样A"
+              />
+              <Input
+                label="样品数量"
+                required
+                value={form.quantity}
+                onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))}
+                placeholder="例如：5件"
+              />
+              <Input
+                label="测试标准（如已知）"
+                value={form.testingStandard}
+                onChange={(e) => setForm((p) => ({ ...p, testingStandard: e.target.value }))}
+                placeholder="例如：ASTM / ISO / GB"
+              />
+              <Input
+                label="期望交付日期"
+                type="date"
+                value={form.deadline}
+                onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
+              />
+            </div>
+          </Card>
 
-            {productType ? (
-              <div>
-                <span className="text-gray-500">产品类型:</span>
-                <p className="text-gray-900 mt-1">{productType}</p>
-              </div>
-            ) : null}
+          <Card>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">测试需求</h2>
+            <div className="grid sm:grid-cols-2 gap-4 mb-4">
+              <Input
+                label="测试目的"
+                value={form.testPurpose}
+                onChange={(e) => setForm((p) => ({ ...p, testPurpose: e.target.value }))}
+                placeholder="例如：论文实验 / 产品验证 / 企业送检"
+              />
+              <Input
+                label="样品状态"
+                value={form.sampleCondition}
+                onChange={(e) => setForm((p) => ({ ...p, sampleCondition: e.target.value }))}
+                placeholder="例如：块状 / 粉末 / 薄膜 / 液体"
+              />
+            </div>
 
-            {testingTarget ? (
+            <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <span className="text-gray-500">检测目标:</span>
-                <p className="text-gray-900 mt-1">{testingTarget}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">期望输出</label>
+                <select
+                  value={form.expectedOutput}
+                  onChange={(e) => setForm((p) => ({ ...p, expectedOutput: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="REPORT">仅报告</option>
+                  <option value="REPORT_CERTIFICATE">报告 + 证书</option>
+                </select>
               </div>
-            ) : null}
 
-            {standardReq ? (
               <div>
-                <span className="text-gray-500">标准要求:</span>
-                <p className="text-gray-900 mt-1">{standardReq}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">紧急程度</label>
+                <select
+                  value={form.urgency}
+                  onChange={(e) => setForm((p) => ({ ...p, urgency: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="NORMAL">普通</option>
+                  <option value="URGENT">加急</option>
+                  <option value="VERY_URGENT">特急</option>
+                </select>
               </div>
-            ) : null}
+            </div>
 
-            {quantity ? (
-              <div>
-                <span className="text-gray-500">样品数量:</span>
-                <p className="text-gray-900 mt-1">{String(quantity)}</p>
-              </div>
-            ) : null}
+            <Textarea
+              label="详细要求说明"
+              required
+              rows={6}
+              value={form.requirements}
+              onChange={(e) => setForm((p) => ({ ...p, requirements: e.target.value }))}
+              placeholder="请详细描述您的定制测试需求，包括测试项目、样品情况、特殊条件、数据要求、证书需求等"
+            />
+          </Card>
 
-            {budget ? (
-              <div>
-                <span className="text-gray-500">预算:</span>
-                <p className="text-gray-900 mt-1">{String(budget)}</p>
+          <Card>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">附件资料</h2>
+            <FileUpload
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+              maxSize={50 * 1024 * 1024}
+              multiple
+              folder="rfq"
+              onUploadComplete={handleUploadComplete}
+            />
+            {files.length > 0 && (
+              <div className="mt-4 space-y-1">
+                {files.map((file, idx) => (
+                  <div key={idx} className="text-sm text-gray-600 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    {file.name}
+                  </div>
+                ))}
               </div>
-            ) : null}
+            )}
+          </Card>
 
-            {deadline ? (
-              <div>
-                <span className="text-gray-500">期望交期:</span>
-                <p className="text-gray-900 mt-1">{formatDateTime(deadline)}</p>
-              </div>
-            ) : null}
+          <Card>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">联系方式</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Input
+                label="联系人"
+                required
+                value={form.contactName}
+                onChange={(e) => setForm((p) => ({ ...p, contactName: e.target.value }))}
+              />
+              <Input
+                label="联系电话"
+                required
+                type="tel"
+                value={form.contactPhone}
+                onChange={(e) => setForm((p) => ({ ...p, contactPhone: e.target.value }))}
+              />
+              <Input
+                label="联系邮箱"
+                required
+                type="email"
+                value={form.contactEmail}
+                onChange={(e) => setForm((p) => ({ ...p, contactEmail: e.target.value }))}
+                className="sm:col-span-2"
+              />
+            </div>
+          </Card>
 
-            {notes ? (
-              <div className="sm:col-span-2">
-                <span className="text-gray-500">补充说明:</span>
-                <p className="text-gray-900 mt-1">{notes}</p>
-              </div>
-            ) : null}
+          <div className="flex gap-3 justify-end">
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              取消
+            </Button>
+            <Button type="submit" loading={loading}>
+              提交定制测试
+            </Button>
           </div>
-        </Card>
-
-        <Card padding="lg">
-          <h2 className="font-semibold text-gray-900 mb-4">状态追踪</h2>
-          <Timeline
-            items={[
-              { title: '需求已提交', time: formatDateTime(createdAt), status: 'completed' },
-              { title: '审核中', status: status === 'SUBMITTED' ? 'current' : 'completed' },
-              {
-                title: '报价中',
-                status: ['QUOTING', 'QUOTED'].includes(status)
-                  ? 'current'
-                  : status === 'SUBMITTED'
-                    ? 'pending'
-                    : 'completed',
-              },
-              {
-                title: '已完成',
-                status: ['ACCEPTED', 'CONVERTED'].includes(status) ? 'completed' : 'pending',
-              },
-            ]}
-          />
-        </Card>
+        </form>
       </div>
     </DashboardLayout>
   );

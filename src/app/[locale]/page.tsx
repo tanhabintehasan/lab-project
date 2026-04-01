@@ -104,6 +104,10 @@ export default function HomePage() {
     [router]
   );
 
+  const handleCustomTesting = useCallback(() => {
+    router.push('/custom-testing');
+  }, [router]);
+
   const fetchHomeData = useCallback(async () => {
     try {
       setLoading(true);
@@ -170,9 +174,9 @@ export default function HomePage() {
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 text-white">
         <div className="absolute inset-0 opacity-10 bg-[url('/grid.svg')]" />
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid gap-10 lg:grid-cols-[1.3fr_0.9fr] items-center">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.3fr_0.9fr]">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm mb-5">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm">
                 <ShieldCheck className="h-4 w-4" />
                 国家科研与检测协同服务入口
               </div>
@@ -207,6 +211,14 @@ export default function HomePage() {
                 >
                   搜索
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleCustomTesting}
+                  className="rounded-xl bg-blue-600 px-8 py-3.5 font-semibold shadow-lg transition-colors hover:bg-blue-700"
+                >
+                  发布定制测试
+                </button>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -221,10 +233,20 @@ export default function HomePage() {
                   </button>
                 ))}
               </div>
+
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={handleCustomTesting}
+                  className="text-sm text-blue-100 underline underline-offset-4 transition-colors hover:text-white"
+                >
+                  没找到合适服务？立即提交定制测试需求 →
+                </button>
+              </div>
             </div>
 
             {/* Sunshine Pre-payment */}
-            <div className="rounded-3xl bg-white text-gray-900 shadow-2xl ring-1 ring-black/5 overflow-hidden">
+            <div className="overflow-hidden rounded-3xl bg-white text-gray-900 shadow-2xl ring-1 ring-black/5">
               <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>

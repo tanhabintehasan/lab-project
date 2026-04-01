@@ -1,0 +1,20 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="smallGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    </pattern>
+    <pattern id="grid" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="url(#smallGrid)"/>
+      <path d="M 160 0 L 0 0 0 160" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.2"/>
+    </pattern>
+    <radialGradient id="fade" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="white" stop-opacity="1"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.15"/>
+    </radialGradient>
+    <mask id="gridMask">
+      <rect width="1200" height="800" fill="url(#fade)"/>
+    </mask>
+  </defs>
+
+  <rect width="1200" height="800" fill="url(#grid)" mask="url(#gridMask)"/>
+</svg>

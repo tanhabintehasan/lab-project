@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="12" failures="10" skipped="0" tests="37" time="29.081" timestamp="2026-03-22T08:28:51.291681+00:00" hostname="agent-env-69ea0d89-e72d-4ef5-acaa-494c0d819518"><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_services_list" time="2.286" /><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_service_detail" time="1.555" /><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_service_not_found" time="0.196"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_api.py:48: in test_service_not_found
+    assert response.status_code == 200  # API returns 200 with error
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_categories_list" time="0.197" /><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_materials_list" time="0.212" /><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_industries_list" time="0.196" /><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_standards_list" time="0.196" /><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_services_filter_by_category" time="0.781" /><testcase classname="backend.tests.test_api.TestPublicAPIs" name="test_services_search" time="0.589" /><testcase classname="backend.tests.test_api.TestAuthAPIs" name="test_login_admin" time="1.689" /><testcase classname="backend.tests.test_api.TestAuthAPIs" name="test_login_customer" time="1.691" /><testcase classname="backend.tests.test_api.TestAuthAPIs" name="test_login_enterprise" time="1.682" /><testcase classname="backend.tests.test_api.TestAuthAPIs" name="test_login_finance" time="1.685" /><testcase classname="backend.tests.test_api.TestAuthAPIs" name="test_login_invalid_credentials" time="0.908"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_api.py:174: in test_login_invalid_credentials
+    assert response.status_code == 200  # API returns 200 with error
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAuthAPIs" name="test_login_nonexistent_user" time="0.196"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_api.py:185: in test_login_nonexistent_user
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAdminAPIs" name="test_admin_stats" time="1.701"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_api.py:208: in test_admin_stats
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAdminAPIs" name="test_admin_users_list" time="1.711"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_api.py:224: in test_admin_users_list
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAdminAPIs" name="test_admin_finance" time="1.689"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_api.py:233: in test_admin_finance
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAdminAPIs" name="test_admin_referrals" time="1.692"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_api.py:241: in test_admin_referrals
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAdminAPIs" name="test_admin_translations" time="1.694"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_api.py:249: in test_admin_translations
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAdminAPIs" name="test_admin_services" time="1.691"><failure message="assert 405 == 200&#10; +  where 405 = &lt;Response [405]&gt;.status_code">backend/tests/test_api.py:257: in test_admin_services
+    assert response.status_code == 200
+E   assert 405 == 200
+E    +  where 405 = &lt;Response [405]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestAdminAPIs" name="test_admin_labs" time="1.967"><failure message="assert 405 == 200&#10; +  where 405 = &lt;Response [405]&gt;.status_code">backend/tests/test_api.py:265: in test_admin_labs
+    assert response.status_code == 200
+E   assert 405 == 200
+E    +  where 405 = &lt;Response [405]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_dashboard_stats" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_user_orders" time="0.002"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_user_wallet" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_user_wallet_transactions" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_user_profile" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_user_addresses" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_user_notifications" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestUserDashboardAPIs" name="test_user_referrals" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:282: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestEnterpriseAPIs" name="test_enterprise_members" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:363: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestEnterpriseAPIs" name="test_enterprise_wallet" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:363: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestEnterpriseAPIs" name="test_enterprise_approvals" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:363: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestRFQAPIs" name="test_rfq_list" time="0.003"><error message="failed on setup with &quot;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code&quot;">backend/tests/test_api.py:402: in setup
+    assert response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_api.TestLabsAPIs" name="test_labs_list" time="0.987" /><testcase classname="backend.tests.test_api.TestLabsAPIs" name="test_lab_detail" time="1.165" /><testcase classname="backend.tests.test_api.TestEquipmentAPIs" name="test_equipment_list" time="0.393" /></testsuite></testsuites>

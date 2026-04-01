@@ -1,0 +1,41 @@
+/**
+ * Test Payment Provider Connection
+ * POST /api/admin/payment-providers/[id]/test
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/admin-auth';
+import { testPaymentProviderConnection } from '@/lib/services/payment-config.service';
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function POST(
+  request: NextRequest,
+  context: RouteContext
+) {
+  try {
+    const authCheck = await requireAdmin();
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
+
+    const { id } = await context.params;
+    const result = await testPaymentProviderConnection(id);
+
+    return NextResponse.json({
+      success: result.success,
+      message: result.message
+    });
+  } catch (error) {
+    console.error('Test payment provider error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: error instanceof Error ? error.message : 'Connection test failed'
+      },
+      { status: 500 }
+    );
+  }
+}
