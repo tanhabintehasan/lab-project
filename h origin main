@@ -1,0 +1,10 @@
+[33mf68c803[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m feat: complete admin branding UI — explicit logo upload, source badges, brand color preview, header site name sync
+[33mc657a24[m[33m ([m[1;31morigin/main[m[33m)[m fix: final stabilization pass — homepage ID mismatch, site-settings 500, Prisma alignment, React keys, category links
+[33m8048ffc[m feat: final PPT-aligned homepage + CMS-driven service templates + full admin CRUD
+[33m101b174[m fix: CMS nullable validation, logo upload, robust category links, DOM keys, auth polish, docs cleanup
+[33m3203310[m fix: correct admin seed password hash, fix CMS 400 from cuid validation, add detailed login/CMS logging
+[33mae3f87f[m fix: CMS sync, category links, logo handling, auth 401, login autocomplete, DOM keys
+[33m6e7431e[m fix: stabilize CMS system and resolve API 500/404 errors
+[33mf75cea9[m feat: production cleanup and dynamic homepage
+[33m729d499[m feat: reorganize database, add SiteSetting and CMS tables, admin CMS/site-settings pages
+[33m9a35db1[m feat: homepage redesign, checkout form updates, logo color theme

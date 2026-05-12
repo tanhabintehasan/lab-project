@@ -1,0 +1,44 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Updated to Node 22 to support modern Next.js features
+  NODE_VERSION = "22"
+  # Prevent sharp from using system libvips that may be incompatible on Netlify build images
+  SHARP_IGNORE_GLOBAL_LIBVIPS = "1"
+  # Ensure Prisma generates binaries for Netlify's Linux environment
+  PRISMA_CLI_BINARY_TARGETS = "debian-openssl-3.0.x"
+
+# Explicitly use the project's @netlify/plugin-nextjs for consistent Next.js 16 support
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Ensure Prisma query engine binaries are bundled into serverless functions
+[functions]
+  included_files = [
+    "node_modules/.prisma/client/**/*",
+    "node_modules/@prisma/client/**/*"
+  ]
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+# API cache control
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+# Static assets cache
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
