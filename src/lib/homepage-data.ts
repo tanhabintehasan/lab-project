@@ -148,7 +148,7 @@ export const defaultPartners = [
 ];
 
 export const defaultEquipment = [
-  { id: 'default-equip-1', title: '表征设备', description: '高端分析设备', image: '/uploads/settings/equip-1.png' },
-  { id: 'default-equip-2', title: '电化学设备', description: '电池测试系统', image: '/uploads/settings/equip-2.png' },
-  { id: 'default-equip-3', title: '环境设备', description: '可靠性测试设备', image: '/uploads/settings/equip-3.png' },
+  { id: 'default-equip-1', title: '表征设备', description: '高端分析设备', image: '/uploads/settings/equip-1.jpg' },
+  { id: 'default-equip-2', title: '电化学设备', description: '电池测试系统', image: '/uploads/settings/equip-2.jpg' },
+  { id: 'default-equip-3', title: '环境设备', description: '可靠性测试设备', image: '/uploads/settings/equip-3.jpg' },
 ];

@@ -1040,7 +1040,7 @@ async function main() {
           accuracy: '±0.5%',
         },
         certifications: ['CNAS', 'CMA'],
-        images: [UNSPLASH.equipment[i % UNSPLASH.equipment.length]],
+        images: ['/uploads/settings/equip-' + ((i % 3) + 1) + '.jpg'],
         status: 'AVAILABLE',
         bookable: true,
         quantity: eq.quantity,
@@ -1057,7 +1057,7 @@ async function main() {
       create: {
         id: `eq-media-${i}`,
         equipmentId: created.id,
-        url: UNSPLASH.equipment[i % UNSPLASH.equipment.length],
+        url: '/uploads/settings/equip-' + ((i % 3) + 1) + '.jpg',
         caption: eq.nameZh,
         sortOrder: 0,
       },
