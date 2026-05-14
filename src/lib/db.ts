@@ -14,19 +14,37 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-function createPrismaClient(): PrismaClient {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is not set');
+function getDatabaseUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      'DATABASE_URL is not set. ' +
+      'Ensure it is configured in your Netlify dashboard (Site settings → Environment variables).'
+    );
   }
+  // Supabase/Neon require SSL from serverless hosts like Netlify.
+  // Append sslmode=require if the query string does not already contain it.
+  if (!url.includes('sslmode=')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}sslmode=require`;
+  }
+  return url;
+}
+
+function createPrismaClient(): PrismaClient {
+  const connectionString = getDatabaseUrl();
 
   // External Pool with server-safe limits to avoid saturating Supabase PgBouncer
-  // allowExitOnIdle is intentionally omitted so the pool survives between
-  // Netlify serverless function warm-starts rather than self-destructing.
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     max: 3,
     idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 5000,
+  });
+
+  // Log connection errors so they show up in Netlify function logs
+  pool.on('error', (err) => {
+    console.error('[PrismaPool] Unexpected pool error:', err.message);
   });
 
   const adapter = new PrismaPg(pool);

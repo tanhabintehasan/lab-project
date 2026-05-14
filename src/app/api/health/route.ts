@@ -3,30 +3,50 @@ import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
 
+/**
+ * GET /api/health
+ *
+ * Diagnostic endpoint for Netlify (and local) deployments.
+ * Returns 200 if the database connection works, 500 otherwise.
+ */
 export async function GET() {
-  const checks: Record<string, string> = {};
-  let dbOk = false;
-  let serviceOk = false;
+  const checks: Record<string, { ok: boolean; detail?: string }> = {};
 
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    checks.database = 'connected';
-    dbOk = true;
-  } catch {
-    checks.database = 'failed';
+  // 1. Env check
+  checks.env = {
+    ok: !!process.env.DATABASE_URL,
+    detail: process.env.DATABASE_URL
+      ? 'DATABASE_URL is set'
+      : 'DATABASE_URL is MISSING — add it in Netlify Site settings → Environment variables',
+  };
+
+  // 2. DB connectivity check
+  if (checks.env.ok) {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      checks.database = { ok: true, detail: 'Connected' };
+    } catch (err: any) {
+      checks.database = {
+        ok: false,
+        detail: err?.message || 'Unknown DB error',
+      };
+    }
+  } else {
+    checks.database = {
+      ok: false,
+      detail: 'Skipped (DATABASE_URL missing)',
+    };
   }
 
-  try {
-    const count = await prisma.testingService.count();
-    checks.testingService = `${count} rows`;
-    serviceOk = true;
-  } catch {
-    checks.testingService = 'failed';
-  }
+  const allOk = Object.values(checks).every((c) => c.ok);
 
-  const allOk = dbOk && serviceOk;
   return NextResponse.json(
-    { ok: allOk, checks },
+    {
+      status: allOk ? 'healthy' : 'unhealthy',
+      checks,
+      nodeVersion: process.version,
+      runtime: 'nodejs',
+    },
     { status: allOk ? 200 : 500 }
   );
 }
