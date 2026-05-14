@@ -43,6 +43,11 @@ interface CustomField {
   sortOrder: number;
 }
 
+interface LabOption {
+  id: string;
+  nameZh: string;
+}
+
 interface ServiceItem {
   id: string;
   slug: string;
@@ -54,6 +59,7 @@ interface ServiceItem {
     nameZh?: string;
     slug?: string;
   };
+  labId?: string | null;
   priceMin?: number | null;
   turnaroundDays?: number | null;
   sampleCount?: string | null;
@@ -71,6 +77,7 @@ const initialForm = {
   nameZh: '',
   shortDescZh: '',
   categoryId: '',
+  labId: '',
   priceMin: '',
   turnaroundDays: '',
   sampleCount: '',
@@ -92,6 +99,8 @@ export default function AdminServicesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [labs, setLabs] = useState<LabOption[]>([]);
+  const [labsLoading, setLabsLoading] = useState(false);
 
   const {
     data: servicesData,
@@ -123,6 +132,23 @@ export default function AdminServicesPage() {
     }
   }, [user, router]);
 
+  // Fetch labs for the dropdown
+  useEffect(() => {
+    if (!modalOpen) return;
+    let mounted = true;
+    setLabsLoading(true);
+    fetch('/api/admin/labs?page=1&pageSize=200', { credentials: 'include', cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!mounted) return;
+        const items = Array.isArray(data?.data) ? data.data : [];
+        setLabs(items.map((l: any) => ({ id: l.id, nameZh: l.nameZh })));
+      })
+      .catch(() => setLabs([]))
+      .finally(() => setLabsLoading(false));
+    return () => { mounted = false; };
+  }, [modalOpen]);
+
   const resetForm = () => {
     setForm(initialForm);
     setEditingId(null);
@@ -140,6 +166,7 @@ export default function AdminServicesPage() {
       nameZh: service.nameZh || '',
       shortDescZh: service.shortDescZh || '',
       categoryId: service.categoryId || service.category?.id || '',
+      labId: (service as any).labId || '',
       priceMin:
         service.priceMin !== null && service.priceMin !== undefined
           ? String(service.priceMin)
@@ -185,6 +212,7 @@ export default function AdminServicesPage() {
         nameZh: form.nameZh.trim(),
         shortDescZh: form.shortDescZh.trim() || undefined,
         categoryId: form.categoryId,
+        labId: form.labId || undefined,
         priceMin: form.priceMin ? parseFloat(form.priceMin) : undefined,
         turnaroundDays: form.turnaroundDays ? parseInt(form.turnaroundDays, 10) : undefined,
         sampleCount: form.sampleCount.trim() || undefined,
@@ -402,23 +430,44 @@ export default function AdminServicesPage() {
             onChange={(e) => setForm((p) => ({ ...p, shortDescZh: e.target.value }))}
           />
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              服务分类 <span className="text-red-500">*</span>
-            </label>
-            <select
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              value={form.categoryId}
-              onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))}
-              disabled={categoriesLoading}
-            >
-              <option value="">请选择分类</option>
-              {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.nameZh}
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                服务分类 <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                value={form.categoryId}
+                onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))}
+                disabled={categoriesLoading}
+              >
+                <option value="">请选择分类</option>
+                {categories?.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.nameZh}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                所属实验室
+              </label>
+              <select
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                value={form.labId}
+                onChange={(e) => setForm((p) => ({ ...p, labId: e.target.value }))}
+                disabled={labsLoading}
+              >
+                <option value="">请选择实验室（可选）</option>
+                {labs.map((lab) => (
+                  <option key={lab.id} value={lab.id}>
+                    {lab.nameZh}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

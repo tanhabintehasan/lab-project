@@ -11,12 +11,11 @@ import { createToken, hashPassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
+import { normalizePhoneStrict } from '@/lib/phone-utils';
 
 const requestSchema = z.object({
-  phone: z.string()
-    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
-    .or(z.string().regex(/^1[3-9]\d{9}$/, 'Invalid phone number')),
-  code: z.string().length(6, 'OTP code must be 6 digits'),
+  phone: z.string().min(1, '请输入手机号'),
+  code: z.string().length(6, '验证码必须是6位数字'),
   name: z.string().min(1, '请输入姓名').max(100),
   password: z.string().min(8, '密码至少8位').optional().or(z.literal('')),
   companyName: z.string().max(200).optional(),
@@ -40,75 +39,73 @@ export async function POST(request: NextRequest) {
 
     const { phone, code, name, password, companyName } = validation.data;
 
-    // Normalize phone number
-    const normalizedPhone = phone.startsWith('+') ? phone : `+86${phone}`;
+    // Normalize phone to E.164
+    const normalizedPhone = normalizePhoneStrict(phone);
+    if (!normalizedPhone) {
+      console.error('[register-phone] Invalid phone format:', phone);
+      return NextResponse.json({ success: false, error: '手机号格式无效' }, { status: 400 });
+    }
+
+    console.log('[register-phone] Registration attempt for:', normalizedPhone);
 
     // Verify OTP
     const otpResult = await verifyOTP(normalizedPhone, code, 'verify');
-
     if (!otpResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: otpResult.error
-        },
-        { status: 400 }
-      );
+      console.warn('[register-phone] OTP verification failed:', otpResult.error);
+      return NextResponse.json({ success: false, error: otpResult.error }, { status: 400 });
     }
 
     // Check if phone already registered
-    const existing = await prisma.user.findUnique({
-      where: { phone: normalizedPhone }
-    });
-
+    const existing = await prisma.user.findUnique({ where: { phone: normalizedPhone } });
     if (existing) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '该手机号已注册'
-        },
-        { status: 409 }
-      );
+      console.warn('[register-phone] Phone already registered:', normalizedPhone);
+      return NextResponse.json({ success: false, error: '该手机号已注册' }, { status: 409 });
     }
 
     // Hash password if provided
     const passwordHash = password ? await hashPassword(password) : '';
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        phone: normalizedPhone,
-        passwordHash,
-        name,
-        role: 'CUSTOMER',
-        status: 'ACTIVE',
-        phoneVerified: true,
-      },
-    });
-
-    // Create wallet
-    await prisma.wallet.create({ data: { userId: user.id } });
-
-    // Create company if provided
-    if (companyName) {
-      const company = await prisma.company.create({
+    // Create user, wallet, and company in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
         data: {
-          name: companyName,
-          contactPerson: name,
-          contactPhone: normalizedPhone,
+          phone: normalizedPhone,
+          passwordHash,
+          name,
+          role: 'CUSTOMER',
+          status: 'ACTIVE',
+          phoneVerified: true,
         },
       });
 
-      await prisma.companyMembership.create({
-        data: { userId: user.id, companyId: company.id, role: 'owner' },
-      });
+      await tx.wallet.create({ data: { userId: user.id } });
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { role: 'ENTERPRISE_MEMBER' },
-      });
-      user.role = 'ENTERPRISE_MEMBER';
-    }
+      if (companyName) {
+        const company = await tx.company.create({
+          data: {
+            name: companyName,
+            contactPerson: name,
+            contactPhone: normalizedPhone,
+          },
+        });
+
+        await tx.companyMembership.create({
+          data: { userId: user.id, companyId: company.id, role: 'owner' },
+        });
+
+        const updatedUser = await tx.user.update({
+          where: { id: user.id },
+          data: { role: 'ENTERPRISE_MEMBER' },
+        });
+
+        return updatedUser;
+      }
+
+      return user;
+    });
+
+    const user = result;
+    console.log('[register-phone] Created user:', user.id, 'role:', user.role);
 
     // Create session
     const sessionId = uuidv4();
@@ -116,7 +113,11 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email || '',
       role: user.role,
-      sessionId
+      sessionId,
+      name: user.name,
+      avatar: user.avatar || undefined,
+      locale: user.locale || undefined,
+      phone: user.phone || undefined,
     });
 
     const clientIp = request.headers.get('x-forwarded-for') ||
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60
     });
 
@@ -154,16 +156,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('[register-phone] Registration successful for user:', user.id);
+
     return NextResponse.json({
       success: true,
       message: '注册成功',
       user: {
         id: user.id,
         phone: user.phone,
+        email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        avatar: user.avatar,
+        locale: user.locale,
       },
-      token
+      // token intentionally omitted — httpOnly cookie only
     });
   } catch (error) {
     console.error('Phone registration error:', error);

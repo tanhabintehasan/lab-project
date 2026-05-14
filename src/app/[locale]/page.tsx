@@ -29,7 +29,7 @@ import {
   defaultStatsBanner,
   defaultWhyChooseStats,
   defaultOfficeCities,
-  defaultLabs,
+
   defaultPartners,
   defaultEquipment,
 } from '@/lib/homepage-data';
@@ -77,10 +77,11 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [cmsPage, setCmsPage] = useState<CMSPage | null>(null);
-  const [backendLabs, setBackendLabs] = useState<Array<{ id: string; nameZh: string; city?: string; shortDescZh?: string; slug?: string; imageUrl?: string }>>([]);
+  const [backendLabs, setBackendLabs] = useState<Array<{ id: string; nameZh: string; city?: string; shortDescZh?: string; slug?: string; imageUrl?: string; coverImage?: string }>>([]);
   const { settings: siteSettings } = useSiteSettings();
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
 
   const handleSearch = useCallback(
     (query: string) => {
@@ -134,7 +135,15 @@ export default function HomePage() {
         setCmsPage(cmsData.data as CMSPage);
       }
 
-      const labsItems = extractArray(labsData) as Array<{ id: string; nameZh: string; city?: string; shortDescZh?: string; slug?: string; imageUrl?: string }>;
+      const labsItems = extractArray(labsData) as Array<{
+        id: string;
+        nameZh: string;
+        city?: string;
+        shortDescZh?: string;
+        slug?: string;
+        coverImage?: string;
+        imageUrl?: string;
+      }>;
       setBackendLabs(Array.isArray(labsItems) ? labsItems : []);
     } catch (error) {
       console.error('Home data fetch error:', error);
@@ -157,6 +166,10 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   const safeHotServices = useMemo(() => (Array.isArray(hotServices) ? hotServices : []), [hotServices]);
   const safeCategories = useMemo(() => (Array.isArray(categories) ? categories : []), [categories]);
 
@@ -175,9 +188,45 @@ export default function HomePage() {
   const partnersSection = getSection('partners');
   const sampleShowcaseSection = getSection('sample_showcase');
   const equipmentShowcaseSection = getSection('equipment_showcase');
+  const bannersSection = getSection('banners');
 
   const brandColor = siteSettings?.brandColor || '#0066B3';
   const heroBadge = heroSection?.badgeZh || '国家科研与检测协同服务入口';
+
+  // Hero carousel slides from CMS (fallback to defaults)
+  const heroSlides = useMemo(() => {
+    const cms = (heroSection?.items || [])
+      .filter((i) => i.isEnabled && i.imageUrl)
+      .map((i) => ({
+        id: i.id,
+        image: i.imageUrl!,
+        title: i.titleZh || '',
+        subtitle: i.subtitleZh || '',
+      }));
+    if (cms.length > 0) return cms;
+    return [
+      { id: 'default-slide-1', image: '/uploads/settings/slide-1-pic.jpg', title: '', subtitle: '' },
+      { id: 'default-slide-2', image: '/uploads/settings/slide-2-pic.jpg', title: '', subtitle: '' },
+    ];
+  }, [heroSection]);
+
+  // Stats banner background from CMS
+  const statsBannerBg = statsBannerSection?.imageUrl || '/uploads/settings/slide-1-pic.jpg';
+
+  // Why choose us background from CMS
+  const whyChooseBg = whyChooseSection?.imageUrl || '/uploads/settings/slide-2-pic.jpg';
+
+  // Banners from CMS
+  const displayBanners = useMemo(() => {
+    return (bannersSection?.items || [])
+      .filter((i) => i.isEnabled && i.imageUrl)
+      .map((i) => ({
+        id: i.id,
+        image: i.imageUrl!,
+        title: i.titleZh || '',
+        link: i.linkUrl || '',
+      }));
+  }, [bannersSection]);
 
   const serviceCatTitle = serviceCategoriesSection?.titleZh || '服务分类';
   const serviceCatSubtitle = serviceCategoriesSection?.subtitleZh || '按研究与检测方向快速进入';
@@ -187,6 +236,7 @@ export default function HomePage() {
       id: i.id,
       name: i.titleZh || '',
       icon: i.icon || '🔬',
+      imageUrl: i.imageUrl || '',
       slug: i.linkUrl || '',
     }));
 
@@ -201,6 +251,8 @@ export default function HomePage() {
   ];
 
   const displayAdvantages = useMemo(() => {
+    // Prevent hydration mismatch: always render defaults on first paint
+    if (!hydrated) return defaultAdvantages;
     const cms = (advantagesSection?.items || [])
       .filter((i) => i.isEnabled)
       .map((i, idx) => {
@@ -221,7 +273,7 @@ export default function HomePage() {
       })
       .filter((a) => a.title && a.items.length > 0);
     return cms.length > 0 ? cms : defaultAdvantages;
-  }, [advantagesSection]);
+  }, [advantagesSection, hydrated]);
 
   const statsBannerTitle = statsBannerSection?.titleZh;
   const statsBannerSubtitle = statsBannerSection?.subtitleZh;
@@ -262,32 +314,16 @@ export default function HomePage() {
   const labsTitle = labsSection?.titleZh || '前沿实验室';
   const labsSubtitle = labsSection?.subtitleZh || '领先的科研检测实验室网络';
   const displayLabs = useMemo(() => {
-    const cms = (labsSection?.items || [])
-      .filter((i) => i.isEnabled)
-      .map((i) => ({
-        id: i.id,
-        name: i.titleZh || '',
-        location: i.subtitleZh || '',
-        specialties: i.descriptionZh || '',
-        imageBg: '',
-        image: i.imageUrl || '',
-        slug: i.linkUrl || '',
-      }))
-      .filter((l) => l.name);
-    if (cms.length > 0) return cms;
-    if (backendLabs.length > 0) {
-      return backendLabs.map((lab, idx) => ({
-        id: lab.id,
-        name: lab.nameZh || '',
-        location: lab.city || '',
-        specialties: lab.shortDescZh || '',
-        imageBg: '',
-        image: lab.imageUrl || defaultLabs[idx % defaultLabs.length]?.image || '',
-        slug: lab.slug || '',
-      }));
-    }
-    return defaultLabs;
-  }, [labsSection, backendLabs]);
+    return backendLabs.map((lab) => ({
+      id: lab.id,
+      name: lab.nameZh || '',
+      location: lab.city || '',
+      specialties: lab.shortDescZh || '',
+      imageBg: '',
+      image: lab.imageUrl || lab.coverImage || '',
+      slug: lab.slug || '',
+    }));
+  }, [backendLabs]);
 
   const partnersTitle = partnersSection?.titleZh || '合作伙伴生态';
   const partnersSubtitle = partnersSection?.subtitleZh || '优先服务高校、科研院所、企业研发部门，再联动检测服务单位';
@@ -348,17 +384,14 @@ export default function HomePage() {
       <section className="relative overflow-hidden text-white">
         {/* Carousel slides */}
         <div className="absolute inset-0">
-          {[
-            '/uploads/settings/slide-1.jpg',
-            '/uploads/settings/slide-2.jpg',
-          ].map((src, idx) => (
+          {heroSlides.map((slide, idx) => (
             <div
-              key={src}
+              key={slide.id}
               className={`absolute inset-0 transition-opacity duration-1000 ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}
             >
               <Image
-                src={src}
-                alt=""
+                src={slide.image}
+                alt={slide.title || ''}
                 fill
                 className="object-cover"
                 priority={idx === 0}
@@ -372,14 +405,14 @@ export default function HomePage() {
         {/* Carousel controls */}
         <button
           type="button"
-          onClick={() => setCurrentSlide((s) => (s === 0 ? 1 : s - 1))}
+          onClick={() => setCurrentSlide((s) => (s === 0 ? heroSlides.length - 1 : s - 1))}
           className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-2 backdrop-blur transition-colors hover:bg-white/30"
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
         <button
           type="button"
-          onClick={() => setCurrentSlide((s) => (s === 1 ? 0 : s + 1))}
+          onClick={() => setCurrentSlide((s) => (s === heroSlides.length - 1 ? 0 : s + 1))}
           className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-2 backdrop-blur transition-colors hover:bg-white/30"
         >
           <ChevronRight className="h-6 w-6" />
@@ -387,7 +420,7 @@ export default function HomePage() {
 
         {/* Dots */}
         <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-          {[0, 1].map((i) => (
+          {heroSlides.map((_, i) => (
             <button
               key={`hero-dot-${i}`}
               type="button"
@@ -410,10 +443,10 @@ export default function HomePage() {
               </div>
 
               {/* Search card with backdrop blur for better visibility */}
-              <div className="rounded-2xl bg-black/40 p-5 backdrop-blur-md ring-1 ring-white/10">
+              <div className="rounded-2xl bg-white/10 backdrop-blur-md border border-slate-700/50 p-5">
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row">
                   <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                    <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       value={searchQuery}
@@ -422,7 +455,7 @@ export default function HomePage() {
                         if (e.key === 'Enter') handleSearch(searchQuery);
                       }}
                       placeholder={t('hero.searchPlaceholder')}
-                      className="w-full rounded-xl border-2 border-gray-200 bg-white py-3.5 pl-12 pr-4 text-base text-gray-900 shadow-lg placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      className="w-full rounded-xl border border-slate-600/50 bg-slate-800/60 py-3.5 pl-12 pr-4 text-base text-white shadow-lg placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
                     />
                   </div>
 
@@ -487,16 +520,24 @@ export default function HomePage() {
               const isCms = cmsServiceCategories.length >= 8;
               const slug = (cat as any).slug || '';
               const href = slug.startsWith('/') ? slug : `/services/categories/${slug}`;
+              // Priority: iconUrl > imageUrl > icon emoji
+              const iconSrc = (cat as any).iconUrl || '';
               const cardClass = isCms
                 ? 'rounded-2xl border border-gray-100 bg-white px-3 py-4 sm:px-4 sm:py-5 text-center transition-all hover:-translate-y-1 hover:shadow-lg'
                 : `group rounded-2xl border ${(cat as any).borderColor} ${(cat as any).bgColor} px-3 py-4 sm:px-4 sm:py-5 text-center transition-all hover:-translate-y-1 hover:shadow-lg`;
-              const iconClass = isCms
-                ? 'mx-auto mb-2 sm:mb-3 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-blue-50 text-2xl sm:text-3xl shadow-sm text-blue-600'
-                : `mx-auto mb-2 sm:mb-3 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-white text-2xl sm:text-3xl shadow-sm ${(cat as any).textColor}`;
               return (
                 <Link key={(cat as any).id} href={href} className={cardClass}>
-                  <div className={iconClass}>
-                    <span>{(cat as any).icon}</span>
+                  <div className="mx-auto mb-2 sm:mb-3 flex h-12 w-12 items-center justify-center">
+                    {iconSrc ? (
+                      <img
+                        src={iconSrc}
+                        alt={(cat as any).name}
+                        className="h-12 w-12 object-contain"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="text-3xl leading-none">{(cat as any).icon || '🔬'}</span>
+                    )}
                   </div>
                   <div className="text-xs sm:text-sm font-semibold text-gray-900">{(cat as any).name}</div>
                 </Link>
@@ -505,6 +546,39 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Banners */}
+      {displayBanners.length > 0 && (
+        <section className="bg-white py-8">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {displayBanners.map((banner) => (
+                <Link
+                  key={banner.id}
+                  href={banner.link || '#'}
+                  className="group relative overflow-hidden rounded-2xl border border-gray-200 transition-all hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="relative aspect-[16/7] w-full">
+                    <Image
+                      src={banner.image}
+                      alt={banner.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
+                    {banner.title && (
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="text-lg font-bold text-white drop-shadow-md">{banner.title}</h3>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Four Advantages */}
       <section className="bg-slate-50 py-16">
@@ -530,7 +604,7 @@ export default function HomePage() {
                     {adv.items.map((item: string, itemIdx: number) => (
                       <li key={`${adv.id}-pt-${itemIdx}`} className="flex items-start gap-2">
                         <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${adv.color}`} />
-                        <span>{item}</span>
+                        <span suppressHydrationWarning>{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -544,7 +618,7 @@ export default function HomePage() {
       {/* Stats Banner */}
       <section className="relative overflow-hidden py-14 text-white">
         <div className="absolute inset-0">
-          <Image src="/uploads/settings/slide-1.jpg" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+          <Image src={statsBannerBg} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
           <div
             className="absolute inset-0"
             style={{ background: `linear-gradient(90deg, color-mix(in srgb, ${brandColor} 90%, black) 0%, color-mix(in srgb, ${brandColor} 80%, transparent) 100%)` }}
@@ -630,7 +704,7 @@ export default function HomePage() {
       {/* Why Choose Us */}
       <section className="relative py-16">
         <div className="absolute inset-0">
-          <Image src="/uploads/settings/slide-2.jpg" alt="" fill className="object-cover opacity-5" sizes="(max-width: 768px) 100vw, 50vw" />
+          <Image src={whyChooseBg} alt="" fill className="object-cover opacity-5" sizes="(max-width: 768px) 100vw, 50vw" />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-50/95 to-blue-50/95" />
         </div>
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -672,65 +746,70 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Labs */}
-      <section className="bg-white py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-8 text-center">
-            <h2 className="text-3xl font-bold text-gray-900">{labsTitle}</h2>
-            <p className="mt-2 text-base text-gray-500">{labsSubtitle}</p>
-          </div>
+     {/* Labs Section */}
+<section className="bg-white py-16">
+  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="mb-8 text-center">
+      <h2 className="text-3xl font-bold text-gray-900">{labsTitle}</h2>
+      <p className="mt-2 text-base text-gray-500">{labsSubtitle}</p>
+    </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {displayLabs.map((lab, idx) => {
-              const bgs = [
-                'bg-gradient-to-br from-blue-100 to-blue-50',
-                'bg-gradient-to-br from-emerald-100 to-emerald-50',
-                'bg-gradient-to-br from-amber-100 to-amber-50',
-                'bg-gradient-to-br from-purple-100 to-purple-50',
-              ];
-              const l = lab as any;
-              const stableKey = l.id || l.slug || l.image || `lab-item-${idx}`;
-              const imageBg = l.imageBg || bgs[idx % bgs.length];
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {displayLabs.map((lab, idx) => {
+        const l = lab as any;
+        
+        // FIX 1: Generate a truly unique key to prevent React from reusing components/images incorrectly
+        const stableKey = `lab-${l.id || l.slug || idx}`;
+        
+        const bgs = [
+          'bg-gradient-to-br from-blue-100 to-blue-50',
+          'bg-gradient-to-br from-emerald-100 to-emerald-50',
+          'bg-gradient-to-br from-amber-100 to-amber-50',
+          'bg-gradient-to-br from-purple-100 to-purple-50',
+        ];
+        const imageBg = l.imageBg || bgs[idx % bgs.length];
 
-              const card = (
-                <div className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition-all hover:-translate-y-1 hover:shadow-lg">
-                  {/* Fix: Added a standard height and 'relative' class to prevent image vanishing */}
-                  <div className={`relative h-48 min-h-[12rem] w-full ${imageBg} flex items-center justify-center overflow-hidden`}>
-                    {typeof l.image === 'string' && l.image.trim().length > 0 ? (
-                      <Image
-                        key={stableKey} // Prevents "refreshing" by giving the element a stable ID
-                        src={l.image.trim()}
-                        alt={l.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                        priority={true} // Forces the image to load immediately to avoid "vanishing"
-                        suppressHydrationWarning={true} // Prevents the hydration flicker if a translation occurs
-                      />
-                    ) : (
-                      <FlaskConical className="h-12 w-12 text-gray-400/70 transition-colors group-hover:text-primary" />
-                    )}
-                  </div>
-
-                  <div className="p-5">
-                    <h3 className="text-base font-bold text-gray-900">{l.name}</h3>
-                    <p className="mt-1 text-sm text-primary">{l.location || l.subtitle || ''}</p>
-                    <p className="mt-2 text-sm text-gray-500 line-clamp-2">{l.specialties || l.description || ''}</p>
-                  </div>
-                </div>
-              );
-
-              return l.slug ? (
-                <Link key={stableKey} href={`/labs/${l.slug}`}>
-                  {card}
-                </Link>
+        const card = (
+          <div className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition-all hover:-translate-y-1 hover:shadow-lg h-full flex flex-col">
+            {/* FIX 2: Use fixed aspect ratio and standard height to ensure layout stability */}
+            <div className={`relative aspect-video w-full ${imageBg} flex items-center justify-center overflow-hidden`}>
+              {l.image && l.image.trim().length > 0 ? (
+                <Image
+                  src={l.image.trim()}
+                  alt={l.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  // FIX 3: Prioritize the first row to prevent blank spaces on load
+                  priority={idx < 4}
+                  suppressHydrationWarning={true}
+                />
               ) : (
-                <div key={stableKey}>{card}</div>
-              );
-            })}
+                <FlaskConical className="h-12 w-12 text-gray-400/70 transition-colors group-hover:text-primary" />
+              )}
+            </div>
+
+            <div className="p-5 flex-grow">
+              <h3 className="text-base font-bold text-gray-900 line-clamp-1">{l.name}</h3>
+              <p className="mt-1 text-sm text-primary font-medium">{l.location || l.subtitle || ''}</p>
+              <p className="mt-2 text-sm text-gray-500 line-clamp-2 leading-relaxed">
+                {l.specialties || l.description || ''}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        );
+
+        return l.slug ? (
+          <Link key={stableKey} href={`/labs/${l.slug}`} className="h-full">
+            {card}
+          </Link>
+        ) : (
+          <div key={stableKey} className="h-full">{card}</div>
+        );
+      })}
+    </div>
+  </div>
+</section>
 
       {/* Sample Showcase */}
       {displaySamples.length > 0 && (
@@ -786,16 +865,16 @@ export default function HomePage() {
                   key={equip.id}
                   className="group overflow-hidden rounded-3xl border border-gray-100 bg-white transition-all hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className={`relative h-40 overflow-hidden ${bg}`}>
+                  <div className={`relative aspect-square overflow-hidden ${bg}`}>
                     {equip.image ? (
-                     <Image 
-  src={equip.image} 
-  alt={equip.title} 
-  fill 
-  className="object-cover transition-transform duration-500 group-hover:scale-105" 
-  sizes="(max-width: 768px) 100vw, 33vw"
-  unoptimized={true} // Bypasses Next.js image optimization temporarily if refreshing persists
-/>
+                      <Image
+                        src={equip.image}
+                        alt={equip.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        unoptimized={true}
+                      />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
                         <ShieldCheck className="h-12 w-12 text-gray-300 transition-colors group-hover:text-emerald-500" />

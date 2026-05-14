@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
-import { FlaskConical, CheckCircle2, AlertTriangle } from 'lucide-react';
+// NOTE: lucide-react icons temporarily replaced with static text for reconciliation audit
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card } from '@/components/ui/card';
@@ -61,8 +61,8 @@ export default function ResetPasswordPage() {
       <main className="flex-1 flex items-center justify-center bg-gray-50 py-12 px-4">
         <Card className="w-full max-w-md" padding="lg">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4">
-              {success ? <CheckCircle2 className="h-6 w-6 text-green-600" /> : <FlaskConical className="h-6 w-6 text-blue-600" />}
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4 text-blue-600 text-xl font-bold">
+              重
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{t('resetPassword')}</h1>
           </div>

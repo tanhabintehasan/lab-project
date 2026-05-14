@@ -3,19 +3,22 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
-import { FlaskConical, Eye, EyeOff, Phone, CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/auth-store';
+import { SUPPORTED_COUNTRIES, normalizePhone } from '@/lib/phone-utils';
 
 type Step = 'phone' | 'verify' | 'profile';
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
   const router = useRouter();
+  const { setUser } = useAuthStore();
   const [step, setStep] = useState<Step>('phone');
+  const [countryCode, setCountryCode] = useState('+86');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -27,13 +30,6 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-
-  const normalizePhone = (p: string) => {
-    const trimmed = p.trim().replace(/\s/g, '');
-    if (trimmed.startsWith('+')) return trimmed;
-    if (/^1[3-9]\d{9}$/.test(trimmed)) return trimmed;
-    return '';
-  };
 
   const startCountdown = () => {
     setCountdown(60);
@@ -47,7 +43,7 @@ export default function RegisterPage() {
 
   const sendOTP = async () => {
     setError('');
-    const normalized = normalizePhone(phone);
+    const normalized = normalizePhone(phone, countryCode);
     if (!normalized) {
       setError(t('invalidPhone'));
       return;
@@ -99,9 +95,9 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register-phone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
+        credentials: 'include',
         body: JSON.stringify({
-          phone: normalizePhone(phone),
+          phone: normalizePhone(phone, countryCode),
           code,
           name: name.trim(),
           password: password || undefined,
@@ -113,6 +109,7 @@ export default function RegisterPage() {
         setError(data.error || t('registerFailed'));
         return;
       }
+      setUser(data.user);
       router.push('/dashboard');
     } catch {
       setError(t('registerRetry'));
@@ -126,6 +123,18 @@ export default function RegisterPage() {
       <div>
         <label className="mb-1.5 block text-sm font-medium text-gray-700">{t('phoneNumber')}</label>
         <div className="flex gap-2">
+          <select
+            value={countryCode}
+            onChange={(e) => setCountryCode(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            aria-label="Country code"
+          >
+            {SUPPORTED_COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.flag} {c.code}
+              </option>
+            ))}
+          </select>
           <Input
             id="phone"
             type="tel"
@@ -137,8 +146,7 @@ export default function RegisterPage() {
         </div>
       </div>
       <Button type="button" fullWidth loading={loading} size="lg" onClick={sendOTP}>
-        <ArrowRight className="mr-2 h-4 w-4" />
-        {t('getCode')}
+        → {t('getCode')}
       </Button>
       <div className="text-center text-sm text-gray-500">
         {t('hasAccount')}{' '}
@@ -167,8 +175,7 @@ export default function RegisterPage() {
       </div>
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => setStep('phone')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('prevStep')}
+          ← {t('prevStep')}
         </Button>
         <Button type="button" className="flex-1" loading={loading} size="lg" onClick={verifyCode}>
           {t('nextStep')}
@@ -199,8 +206,8 @@ export default function RegisterPage() {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
-        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600">
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[38px] text-xs text-gray-400 hover:text-gray-600">
+          {showPassword ? '隐藏' : '显示'}
         </button>
       </div>
       {password && (
@@ -209,12 +216,10 @@ export default function RegisterPage() {
       <Input id="companyName" label={t('enterpriseName')} value={companyName} onChange={(e) => setCompanyName(e.target.value)} hint={t('companyHint')} />
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => setStep('verify')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('prevStep')}
+          ← {t('prevStep')}
         </Button>
         <Button type="button" className="flex-1" loading={loading} size="lg" onClick={handleSubmit}>
-          <CheckCircle2 className="mr-2 h-4 w-4" />
-          {t('completeRegister')}
+          ✓ {t('completeRegister')}
         </Button>
       </div>
     </div>
@@ -232,8 +237,8 @@ export default function RegisterPage() {
       <main className="flex-1 flex items-center justify-center bg-gray-50 py-12 px-4">
         <Card className="w-full max-w-md" padding="lg">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4">
-              <FlaskConical className="h-6 w-6 text-blue-600" />
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4 text-blue-600 text-xl font-bold">
+              注
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{stepTitles[step]}</h1>
             <div className="mt-3 flex justify-center gap-2">

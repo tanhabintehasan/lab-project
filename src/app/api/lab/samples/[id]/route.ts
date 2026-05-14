@@ -44,4 +44,4 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
   }
 };
 
-export const PATCH = withAuth(handler, ['LAB_PARTNER']);
+export const PATCH = withAuth(handler, ['LAB_PARTNER', 'LAB_MANAGER', 'TECHNICIAN']);

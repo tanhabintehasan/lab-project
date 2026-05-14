@@ -12,6 +12,8 @@ type CategoryItem = {
   slug: string;
   descZh?: string | null;
   icon?: string | null;
+  iconUrl?: string | null;
+  image?: string | null;
   sortOrder?: number;
   isActive: boolean;
   _count?: {
@@ -37,6 +39,7 @@ const initialForm = {
   slug: '',
   descZh: '',
   icon: '',
+  iconUrl: '',
   sortOrder: 0,
   isActive: true,
 };
@@ -117,6 +120,7 @@ export default function AdminServiceCategoriesPage() {
         slug: form.slug.trim().toLowerCase(),
         descZh: form.descZh.trim() || null,
         icon: form.icon.trim() || null,
+        iconUrl: form.iconUrl.trim() || null,
         sortOrder: Number(form.sortOrder) || 0,
       };
 
@@ -161,6 +165,7 @@ export default function AdminServiceCategoriesPage() {
       slug: item.slug || '',
       descZh: item.descZh || '',
       icon: item.icon || '',
+      iconUrl: item.iconUrl || '',
       sortOrder: item.sortOrder || 0,
       isActive: item.isActive,
     });
@@ -261,6 +266,62 @@ export default function AdminServiceCategoriesPage() {
               className="rounded-xl border border-gray-200 px-4 py-3 text-sm"
             />
 
+            {/* Category Icon URL for homepage grid */}
+            <div className="rounded-xl border border-gray-200 p-3 space-y-2">
+              <label className="block text-xs font-medium text-gray-700">首页网格图标</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://example.com/icon.svg"
+                  value={form.iconUrl}
+                  onChange={(e) => setForm((s) => ({ ...s, iconUrl: e.target.value }))}
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      setSaving(true);
+                      const uploadForm = new FormData();
+                      uploadForm.append('file', file);
+                      uploadForm.append('folder', 'service-categories');
+                      uploadForm.append('entityType', 'CMS');
+                      const res = await fetch('/api/admin/upload', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: uploadForm,
+                      });
+                      const data = await res.json();
+                      if (res.ok && data?.success && data.data?.url) {
+                        setForm((s) => ({ ...s, iconUrl: data.data.url }));
+                      } else {
+                        setError(data?.error || '上传图标失败');
+                      }
+                    } catch {
+                      setError('上传图标失败');
+                    } finally {
+                      setSaving(false);
+                      e.target.value = '';
+                    }
+                  }}
+                  className="text-sm text-gray-500 file:mr-2 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-xs file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+              {form.iconUrl && (
+                <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                  <img
+                    src={form.iconUrl}
+                    alt="Icon preview"
+                    className="h-full w-full object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+              )}
+            </div>
+
             <input
               value={form.sortOrder}
               onChange={(e) => setForm((s) => ({ ...s, sortOrder: Number(e.target.value) }))}
@@ -311,8 +372,12 @@ export default function AdminServiceCategoriesPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl">
-                        {item.icon || '📁'}
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl overflow-hidden">
+                        {item.iconUrl ? (
+                          <img src={item.iconUrl} alt={item.nameZh} className="h-full w-full object-contain p-1" />
+                        ) : (
+                          <span className="text-2xl">{item.icon || '📁'}</span>
+                        )}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">

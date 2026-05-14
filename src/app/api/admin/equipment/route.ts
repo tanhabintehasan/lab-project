@@ -57,6 +57,7 @@ const handlePost = async (request: NextRequest, user: JWTPayload) => {
         quantity: data.quantity,
         hourlyRate: data.hourlyRate,
         dailyRate: data.dailyRate,
+        images: data.imageUrl ? { urls: [data.imageUrl] } : undefined,
       },
     });
 

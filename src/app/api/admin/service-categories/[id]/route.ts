@@ -11,6 +11,8 @@ const adminCategoryUpdateSchema = z.object({
   slug: z.string().min(1, 'slug不能为空').optional(),
   descZh: z.string().optional().nullable(),
   icon: z.string().optional().nullable(),
+  iconUrl: z.string().optional().nullable(),
+  image: z.string().optional().nullable(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 });
@@ -105,6 +107,8 @@ const handlePatch = async (request: NextRequest, user: JWTPayload) => {
       ...(data.slug !== undefined ? { slug: data.slug } : {}),
       ...(data.descZh !== undefined ? { descZh: data.descZh?.trim() || null } : {}),
       ...(data.icon !== undefined ? { icon: data.icon?.trim() || null } : {}),
+      ...(data.iconUrl !== undefined ? { iconUrl: data.iconUrl?.trim() || null } : {}),
+      ...(data.image !== undefined ? { image: data.image?.trim() || null } : {}),
       ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
       ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
     };

@@ -103,8 +103,31 @@ export function withAuth(
     if (!user) {
       return errorResponse('未授权访问', 401);
     }
-    if (requiredRoles && !requiredRoles.includes(user.role) && user.role !== 'SUPER_ADMIN') {
+    // Strict role-string comparison: user.role must be exactly one of requiredRoles
+    if (requiredRoles && !requiredRoles.includes(user.role)) {
       return errorResponse('权限不足', 403);
+    }
+    return handler(request, user);
+  };
+}
+
+/**
+ * Permission-bitmask guard for API handlers.
+ * Preferred over withAuth when checking fine-grained capabilities.
+ */
+export function withPermission(
+  handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>,
+  ...requiredPermissions: number[]
+) {
+  return async (request: NextRequest) => {
+    const user = await getAuthUser(request);
+    if (!user) {
+      return errorResponse('未授权访问', 401);
+    }
+    const { hasPermission } = await import('./rbac');
+    const missing = requiredPermissions.filter((p) => !hasPermission(user.role, p));
+    if (missing.length > 0) {
+      return errorResponse(`权限不足 (missing: ${missing.map((m) => `0x${m.toString(16)}`).join(', ')})`, 403);
     }
     return handler(request, user);
   };

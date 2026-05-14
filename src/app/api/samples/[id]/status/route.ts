@@ -37,9 +37,15 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
 
     // Update sample status
     const updatedSample = await prisma.$transaction(async (tx) => {
+      const updateData: Record<string, unknown> = { status: data.status };
+      if (data.status === 'RECEIVED') {
+        updateData.receivedAt = new Date();
+        updateData.receivedBy = user.email || user.userId;
+      }
+
       const updated = await tx.sample.update({
         where: { id: sampleId },
-        data: { status: data.status },
+        data: updateData,
       });
 
       // Add timeline entry
@@ -128,4 +134,4 @@ function getSampleStatusDescription(status: string): string {
   return descriptions[status] || '状态已更新';
 }
 
-export const PATCH = withAuth(handler, ['SUPER_ADMIN', 'LAB_PARTNER']);
+export const PATCH = withAuth(handler, ['SUPER_ADMIN', 'LAB_PARTNER', 'LAB_MANAGER', 'TECHNICIAN']);

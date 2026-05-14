@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify, type JWTPayload as JoseJWTPayload } from 'jose';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/db';
 
 const TOKEN_EXPIRY = '7d';
 const COOKIE_NAME = 'auth-token';
@@ -25,6 +26,7 @@ export interface JWTPayload extends JoseJWTPayload {
   name?: string;
   avatar?: string;
   locale?: string;
+  phone?: string;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -62,6 +64,22 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
 
     const payload = await verifyToken(token);
     if (!payload) return null;
+
+    // Validate session exists and is not expired in DB
+    const session = await prisma.session.findUnique({
+      where: { id: payload.sessionId },
+      select: { id: true, expiresAt: true },
+    });
+
+    if (!session) {
+      console.warn('getCurrentUser: Session not found in DB:', payload.sessionId);
+      return null;
+    }
+
+    if (new Date() > session.expiresAt) {
+      console.warn('getCurrentUser: Session expired:', payload.sessionId);
+      return null;
+    }
 
     return payload;
   } catch (error) {
@@ -109,14 +127,29 @@ export function hasRole(userRole: string, requiredRoles: string[]): boolean {
   return requiredRoles.includes(userRole);
 }
 
+/**
+ * Strict role check for admin capabilities.
+ * Returns true ONLY for exact SUPER_ADMIN or FINANCE_ADMIN match.
+ */
 export function isAdmin(role: string): boolean {
-  return ['SUPER_ADMIN', 'FINANCE_ADMIN'].includes(role);
+  return role === 'SUPER_ADMIN' || role === 'FINANCE_ADMIN';
+}
+
+/**
+ * Strict role check for lab portal access.
+ * Returns true ONLY for exact LAB_MANAGER, TECHNICIAN, or LAB_PARTNER match.
+ */
+export function isLabStaff(role: string): boolean {
+  return role === 'LAB_MANAGER' || role === 'TECHNICIAN' || role === 'LAB_PARTNER';
 }
 
 export function isLabPartner(role: string): boolean {
   return role === 'LAB_PARTNER';
 }
 
+/**
+ * @deprecated Use src/lib/rbac.ts ROLE_PERMISSIONS (bitmask) instead.
+ */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   VISITOR: ['view:public'],
   CUSTOMER: [
@@ -147,6 +180,16 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage:samples',
     'upload:reports',
     'manage:lab-equipment',
+  ],
+  LAB_MANAGER: [
+    'view:public',
+    'view:assigned-orders',
+    'update:assigned-orders',
+    'manage:samples',
+    'upload:reports',
+    'approve:reports',
+    'manage:lab-equipment',
+    'view:analytics',
   ],
   TECHNICIAN: [
     'view:assigned-tasks',

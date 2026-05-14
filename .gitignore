@@ -58,6 +58,9 @@ public/uploads/
 archives/
 database/backups/
 
+# Prevent root-level SQL dumps from being committed
+/*.sql
+
 # Local database files
 *.sqlite
 *.sqlite3

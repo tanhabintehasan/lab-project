@@ -5,10 +5,13 @@ import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { orderStatusEmail } from '@/lib/email-templates';
+import { isValidTransition } from '@/lib/validations';
+import { recordLabPayout } from '@/lib/financial-ledger';
 
 const statusSchema = z.object({
   status: z.enum(['PENDING_PAYMENT', 'PAID', 'SAMPLE_PENDING', 'SAMPLE_SHIPPED', 'SAMPLE_RECEIVED', 'SAMPLE_INSPECTED', 'TESTING_IN_PROGRESS', 'TESTING_COMPLETE', 'REPORT_GENERATING', 'REPORT_APPROVED', 'REPORT_DELIVERED', 'COMPLETED', 'CANCELLED', 'REFUNDING', 'REFUNDED']),
   note: z.string().optional(),
+  force: z.boolean().optional(),
 });
 
 const handler = async (request: NextRequest, user: JWTPayload) => {
@@ -33,6 +36,32 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
       return errorResponse('权限不足', 403);
     }
 
+    // Validate transition unless force override by SUPER_ADMIN
+    if (!data.force || user.role !== 'SUPER_ADMIN') {
+      if (!isValidTransition(user.role, order.status, data.status)) {
+        return errorResponse(`当前角色不允许从 ${order.status} 转为 ${data.status}`, 403);
+      }
+    }
+
+    // Gate: do not allow TESTING_IN_PROGRESS until all samples are RECEIVED
+    if (data.status === 'TESTING_IN_PROGRESS') {
+      const samples = await prisma.sample.findMany({
+        where: { orderId },
+        select: { status: true },
+      });
+      if (samples.length > 0) {
+        const pending = samples.filter(
+          (s) => s.status === 'PENDING_SUBMISSION' || s.status === 'SHIPPED'
+        );
+        if (pending.length > 0) {
+          return errorResponse(
+            `Cannot start testing: ${pending.length} sample(s) not yet received by the lab`,
+            422
+          );
+        }
+      }
+    }
+
     // Update order status
     const updatedOrder = await prisma.$transaction(async (tx) => {
       const updated = await tx.order.update({
@@ -41,11 +70,14 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
       });
 
       // Add timeline entry
+      const timelineTitle = data.force && user.role === 'SUPER_ADMIN'
+        ? `[强制] ${getStatusTitle(data.status)}`
+        : getStatusTitle(data.status);
       await tx.orderTimeline.create({
         data: {
           orderId,
           status: data.status,
-          title: getStatusTitle(data.status),
+          title: timelineTitle,
           description: data.note || getStatusDescription(data.status),
           operator: user.userId,
         },
@@ -64,8 +96,43 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
         },
       });
 
+      // Audit log
+      await tx.auditLog.create({
+        data: {
+          userId: user.userId,
+          action: data.force ? 'FORCE_UPDATE_ORDER_STATUS' : 'UPDATE_ORDER_STATUS',
+          entity: 'Order',
+          entityId: orderId,
+          details: {
+            oldStatus: order.status,
+            newStatus: data.status,
+            note: data.note,
+            force: data.force,
+          },
+        },
+      });
+
       return updated;
     });
+
+    // Auto-create lab payout after successful order completion (non-blocking)
+    if (data.status === 'COMPLETED' && order.assignedLabId && order.paymentStatus === 'PAID') {
+      try {
+        await recordLabPayout(
+          orderId,
+          order.assignedLabId,
+          order.totalAmount,
+          {
+            description: `订单完成收益: ${order.orderNo}`,
+            referenceType: 'order',
+            referenceId: orderId,
+          }
+        );
+      } catch (payoutError) {
+        console.error('Auto lab payout failed for order', orderId, payoutError);
+        // Non-blocking: order completes even if payout recording fails
+      }
+    }
 
     // Send email notification
     const emailContent = orderStatusEmail({
@@ -136,4 +203,4 @@ function getStatusDescription(status: string): string {
   return descriptions[status] || '状态已更新';
 }
 
-export const PATCH = withAuth(handler, ['SUPER_ADMIN', 'LAB_PARTNER']);
+export const PATCH = withAuth(handler, ['SUPER_ADMIN', 'LAB_PARTNER', 'LAB_MANAGER']);

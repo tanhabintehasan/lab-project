@@ -14,11 +14,16 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const orderId = url.searchParams.get('orderId');
+    const barcode = url.searchParams.get('barcode')?.trim().toUpperCase();
 
     const where: Prisma.SampleWhereInput = {};
 
     if (user.role === 'CUSTOMER') {
       where.order = { userId: user.userId };
+    }
+
+    if (barcode) {
+      where.sampleNo = barcode;
     }
 
     if (status && (Object.values(SampleStatus) as string[]).includes(status)) where.status = status as SampleStatus;

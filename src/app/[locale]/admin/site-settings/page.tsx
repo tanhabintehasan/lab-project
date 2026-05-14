@@ -7,7 +7,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Globe, Mail, Phone, MapPin, Image, FileText, Save, Upload, X, FlaskConical, Palette } from 'lucide-react';
+import { MediaPicker } from '@/components/admin/media-picker';
+import {
+  Globe, Mail, Phone, MapPin, Image, FileText, Save, Upload, X, FlaskConical,
+  Palette, ShieldAlert, Eye, EyeOff, KeyRound,
+} from 'lucide-react';
 
 interface SiteSettingData {
   id?: string;
@@ -15,8 +19,8 @@ interface SiteSettingData {
   siteNameEn?: string;
   logoUrl?: string;
   logoUploadUrl?: string;
-  brandColor?: string;
   faviconUrl?: string;
+  brandColor?: string;
   supportEmail?: string;
   supportPhone?: string;
   whatsapp?: string;
@@ -28,19 +32,49 @@ interface SiteSettingData {
   youtubeUrl?: string;
   footerTextZh?: string;
   footerTextEn?: string;
+  footerCopyrightZh?: string;
+  footerCopyrightEn?: string;
+  footerContactPhone?: string;
+  footerContactEmail?: string;
+  footerContactAddress?: string;
+  footerIcp?: string;
+  footerSocialLinks?: Record<string, string>;
   seoTitleZh?: string;
   seoTitleEn?: string;
   seoDescriptionZh?: string;
   seoDescriptionEn?: string;
+  seoKeywordsZh?: string;
+  seoKeywordsEn?: string;
 }
+
+interface AppConfigItem {
+  key: string;
+  value: string;
+  category?: string;
+  description?: string;
+}
+
+const APP_CONFIG_CATEGORIES: Record<string, string> = {
+  maps: '地图服务',
+  email: '邮件服务',
+  sms: '短信服务',
+  storage: '存储服务',
+  payment: '支付服务',
+  general: '通用配置',
+};
 
 export default function AdminSiteSettingsPage() {
   const [data, setData] = useState<SiteSettingData>({});
+  const [appConfig, setAppConfig] = useState<Record<string, string>>({});
+  const [appConfigMeta, setAppConfigMeta] = useState<AppConfigItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [savingAppConfig, setSavingAppConfig] = useState(false);
   const [message, setMessage] = useState('');
   const [fetchError, setFetchError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
+  const [mediaPickerField, setMediaPickerField] = useState<'logo' | 'favicon' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { refresh: refreshSiteSettings } = useSiteSettings();
 
@@ -48,12 +82,21 @@ export default function AdminSiteSettingsPage() {
     setLoading(true);
     setFetchError('');
     try {
-      const res = await fetch('/api/admin/site-settings');
-      const json = await res.json();
-      if (json?.success && json.data) {
-        setData(json.data);
+      const [settingsRes, configRes] = await Promise.all([
+        fetch('/api/admin/site-settings', { credentials: 'include' }),
+        fetch('/api/admin/app-config', { credentials: 'include' }),
+      ]);
+      const settingsJson = await settingsRes.json();
+      const configJson = await configRes.json();
+
+      if (settingsJson?.success && settingsJson.data) {
+        setData(settingsJson.data as SiteSettingData);
       } else {
-        setFetchError(json?.error || '加载设置失败，请刷新重试');
+        setFetchError(settingsJson?.error || '加载设置失败');
+      }
+
+      if (configJson?.success && configJson.data) {
+        setAppConfig(configJson.data as Record<string, string>);
       }
     } catch (e) {
       setFetchError('网络错误，无法加载设置');
@@ -70,6 +113,13 @@ export default function AdminSiteSettingsPage() {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleSocialLinkChange = (platform: string, value: string) => {
+    setData((prev) => ({
+      ...prev,
+      footerSocialLinks: { ...(prev.footerSocialLinks || {}), [platform]: value },
+    }));
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -84,21 +134,21 @@ export default function AdminSiteSettingsPage() {
       formData.append('file', file);
       formData.append('folder', 'settings');
       formData.append('entityType', 'settings');
-      const res = await fetch('/api/uploads', {
+      const res = await fetch('/api/admin/upload', {
         method: 'POST',
         credentials: 'include',
         body: formData,
       });
       const json = await res.json();
-      if (json?.success && json.data?.file?.url) {
-        const updated = { ...data, logoUploadUrl: json.data.file.url };
+      if (json?.success && json.data?.url) {
+        const updated = { ...data, logoUploadUrl: json.data.url };
         setData(updated);
         setMessage('Logo 上传成功，正在自动保存…');
-        // Auto-save logo upload so it persists to DB and updates frontend immediately
         const saveRes = await fetch('/api/admin/site-settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updated),
+          credentials: 'include',
         });
         const saveJson = await saveRes.json();
         if (saveJson?.success) {
@@ -110,7 +160,7 @@ export default function AdminSiteSettingsPage() {
       } else {
         setMessage(json?.error || '上传失败');
       }
-    } catch (err) {
+    } catch {
       setMessage('上传失败');
     } finally {
       setUploading(false);
@@ -130,6 +180,7 @@ export default function AdminSiteSettingsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
+        credentials: 'include',
       });
       const json = await res.json();
       if (json?.success) {
@@ -138,11 +189,43 @@ export default function AdminSiteSettingsPage() {
       } else {
         setMessage(json?.error || '保存失败');
       }
-    } catch (e) {
+    } catch {
       setMessage('保存失败');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveAppConfig = async (key: string, value: string) => {
+    setSavingAppConfig(true);
+    try {
+      const res = await fetch('/api/admin/app-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value }),
+        credentials: 'include',
+      });
+      const json = await res.json();
+      if (json?.success) {
+        setAppConfig((prev) => ({ ...prev, [key]: value }));
+        setMessage(`配置 ${key} 已保存`);
+      } else {
+        setMessage(json?.error || '保存失败');
+      }
+    } catch {
+      setMessage('保存失败');
+    } finally {
+      setSavingAppConfig(false);
+    }
+  };
+
+  const handleMediaSelect = (url: string) => {
+    if (mediaPickerField === 'logo') {
+      setData((prev) => ({ ...prev, logoUrl: url }));
+    } else if (mediaPickerField === 'favicon') {
+      setData((prev) => ({ ...prev, faviconUrl: url }));
+    }
+    setMediaPickerField(null);
   };
 
   if (loading) {
@@ -185,6 +268,40 @@ export default function AdminSiteSettingsPage() {
     </div>
   );
 
+  const ImageField = ({ label, url, onSelect }: { label: string; url?: string | null; onSelect: () => void }) => (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:border-blue-400"
+        >
+          {url ? (
+            <img src={url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <Image className="h-6 w-6 text-gray-400" />
+          )}
+        </button>
+        <div className="flex-1 min-w-0">
+          <Input value={url || ''} onChange={() => {}} placeholder="点击左侧选择图片" className="text-xs" readOnly />
+          {url && (
+            <button type="button" onClick={onSelect} className="mt-1 text-xs text-blue-600 hover:text-blue-700">更换图片</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Group app configs by category
+  const groupedConfigs = Object.entries(appConfig).reduce((acc, [key, value]) => {
+    const meta = appConfigMeta.find((m) => m.key === key);
+    const category = meta?.category || 'general';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push({ key, value, description: meta?.description });
+    return acc;
+  }, {} as Record<string, Array<{ key: string; value: string; description?: string }>>);
+
   return (
     <AdminLayout>
       <div className="mx-auto max-w-5xl space-y-6">
@@ -197,60 +314,41 @@ export default function AdminSiteSettingsPage() {
         </div>
 
         {fetchError && (
-          <div className="rounded-lg px-4 py-3 text-sm bg-red-50 text-red-700">
-            {fetchError}
-          </div>
+          <div className="rounded-lg px-4 py-3 text-sm bg-red-50 text-red-700">{fetchError}</div>
         )}
 
         {message && (
-          <div className={`rounded-lg px-4 py-3 text-sm ${message.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          <div className={`rounded-lg px-4 py-3 text-sm ${message.includes('成功') || message.includes('已保存') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
             {message}
           </div>
         )}
 
-        {/* Brand Identity */}
+        {/* ─── Brand Identity ─── */}
         <Section title="品牌信息" icon={Image}>
           <Field label="网站名称" value={data.siteName} onChange={(v) => handleChange('siteName', v)} placeholder="度量衡科研平台" />
+          <Field label="网站名称 (EN)" value={data.siteNameEn} onChange={(v) => handleChange('siteNameEn', v)} placeholder="Metrology Platform" />
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">品牌主色</label>
             <div className="flex items-center gap-3">
-              <Input
-                value={data.brandColor || ''}
-                onChange={(e) => handleChange('brandColor', e.target.value)}
-                placeholder="#0066B3"
-                className="w-full"
-              />
-              <span
-                className="inline-block h-9 w-9 shrink-0 rounded-lg border border-gray-200 shadow-sm"
-                style={{ backgroundColor: data.brandColor || '#0066B3' }}
-                title="品牌色预览"
-              />
+              <Input value={data.brandColor || ''} onChange={(e) => handleChange('brandColor', e.target.value)} placeholder="#0066B3" className="w-full" />
+              <span className="inline-block h-9 w-9 shrink-0 rounded-lg border border-gray-200 shadow-sm" style={{ backgroundColor: data.brandColor || '#0066B3' }} title="品牌色预览" />
             </div>
           </div>
-          <Field label="Favicon URL" value={data.faviconUrl} onChange={(v) => handleChange('faviconUrl', v)} placeholder="/favicon.ico" />
+          <ImageField label="Logo" url={data.logoUrl} onSelect={() => setMediaPickerField('logo')} />
+          <ImageField label="Favicon" url={data.faviconUrl} onSelect={() => setMediaPickerField('favicon')} />
         </Section>
 
-        {/* Logo Management */}
+        {/* ─── Logo Upload Card ─── */}
         <Card padding="lg" className="mb-6">
           <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
             <Palette className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Logo 管理</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Logo 上传</h2>
           </div>
-
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Active Preview */}
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">当前生效 Logo</span>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    logoSource === 'uploaded'
-                      ? 'bg-blue-50 text-blue-700'
-                      : logoSource === 'manual'
-                        ? 'bg-amber-50 text-amber-700'
-                        : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${logoSource === 'uploaded' ? 'bg-blue-50 text-blue-700' : logoSource === 'manual' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
                   {logoSource === 'uploaded' ? '上传的 Logo' : logoSource === 'manual' ? '手动 URL' : '默认图标'}
                 </span>
               </div>
@@ -264,14 +362,9 @@ export default function AdminSiteSettingsPage() {
                   </div>
                 )}
               </div>
-              <p className="mt-3 text-xs text-gray-500">
-                优先级：上传的 Logo &gt; 手动 URL &gt; 默认图标
-              </p>
+              <p className="mt-3 text-xs text-gray-500">优先级：上传的 Logo &gt; 手动 URL &gt; 默认图标</p>
             </div>
-
-            {/* Controls */}
             <div className="space-y-5">
-              {/* Upload */}
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">上传 Logo</label>
                 <div className="flex items-center gap-3">
@@ -294,58 +387,116 @@ export default function AdminSiteSettingsPage() {
                   </div>
                 )}
               </div>
-
-              {/* Manual URL */}
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">Logo 手动 URL</label>
-                <Input
-                  value={data.logoUrl || ''}
-                  onChange={(e) => handleChange('logoUrl', e.target.value)}
-                  placeholder="/logo.png 或 https://example.com/logo.png"
-                  className="w-full"
-                />
-                {data.logoUrl && !data.logoUploadUrl && (
-                  <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3">
-                    <p className="mb-2 text-xs font-medium text-amber-700">手动 URL 预览</p>
-                    <img src={data.logoUrl} alt="Manual logo" className="h-10 w-auto object-contain" />
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </Card>
 
-        <Section title="联系方式" icon={Phone}>
-          <Field label="客服邮箱" value={data.supportEmail} onChange={(v) => handleChange('supportEmail', v)} placeholder="support@labtest.com" />
-          <Field label="客服电话" value={data.supportPhone} onChange={(v) => handleChange('supportPhone', v)} placeholder="400-123-4567" />
-          <Field label="WhatsApp" value={data.whatsapp} onChange={(v) => handleChange('whatsapp', v)} />
-          <Field label="微信公众号/ID" value={data.wechat} onChange={(v) => handleChange('wechat', v)} />
-        </Section>
-
-        <Section title="地址" icon={MapPin}>
+        {/* ─── SEO Meta Tags ─── */}
+        <Section title="SEO / 元数据" icon={FileText}>
+          <Field label="SEO 标题 (中文)" value={data.seoTitleZh} onChange={(v) => handleChange('seoTitleZh', v)} placeholder="度量衡科研平台 | 专业科研检测服务" />
+          <Field label="SEO 标题 (EN)" value={data.seoTitleEn} onChange={(v) => handleChange('seoTitleEn', v)} placeholder="Metrology Platform | Research Testing Services" />
           <div className="md:col-span-2">
-            <Field label="地址" value={data.addressZh} onChange={(v) => handleChange('addressZh', v)} placeholder="中国上海市浦东新区张江高科技园区" type="textarea" />
+            <Field label="SEO 描述 (中文)" value={data.seoDescriptionZh} onChange={(v) => handleChange('seoDescriptionZh', v)} placeholder="一站式检测服务平台..." type="textarea" />
           </div>
+          <div className="md:col-span-2">
+            <Field label="SEO 描述 (EN)" value={data.seoDescriptionEn} onChange={(v) => handleChange('seoDescriptionEn', v)} placeholder="One-stop testing service platform..." type="textarea" />
+          </div>
+          <Field label="SEO 关键词 (中文)" value={data.seoKeywordsZh} onChange={(v) => handleChange('seoKeywordsZh', v)} placeholder="检测, 科研, 实验室, 材料测试" />
+          <Field label="SEO 关键词 (EN)" value={data.seoKeywordsEn} onChange={(v) => handleChange('seoKeywordsEn', v)} placeholder="testing, research, laboratory, materials" />
         </Section>
 
-        <Section title="社交媒体" icon={Globe}>
+        {/* ─── Footer Contact Info ─── */}
+        <Section title="页脚联系信息" icon={Phone}>
+          <Field label="页脚电话" value={data.footerContactPhone} onChange={(v) => handleChange('footerContactPhone', v)} placeholder="400-123-4567" />
+          <Field label="页脚邮箱" value={data.footerContactEmail} onChange={(v) => handleChange('footerContactEmail', v)} placeholder="support@labtest.com" />
+          <div className="md:col-span-2">
+            <Field label="页脚地址" value={data.footerContactAddress} onChange={(v) => handleChange('footerContactAddress', v)} placeholder="中国上海市浦东新区张江高科技园区" type="textarea" />
+          </div>
+          <Field label="页脚版权 (中文)" value={data.footerCopyrightZh} onChange={(v) => handleChange('footerCopyrightZh', v)} placeholder="© 2026 度量衡科研平台 版权所有" />
+          <Field label="页脚版权 (EN)" value={data.footerCopyrightEn} onChange={(v) => handleChange('footerCopyrightEn', v)} placeholder="© 2026 Metrology Platform. All rights reserved." />
+          <Field label="ICP 备案号" value={data.footerIcp} onChange={(v) => handleChange('footerIcp', v)} placeholder="沪ICP备XXXXXXXX号" />
+        </Section>
+
+        {/* ─── Footer Social Links ─── */}
+        <Section title="页脚社交媒体" icon={Globe}>
           <Field label="Facebook URL" value={data.facebookUrl} onChange={(v) => handleChange('facebookUrl', v)} />
           <Field label="LinkedIn URL" value={data.linkedinUrl} onChange={(v) => handleChange('linkedinUrl', v)} />
           <Field label="YouTube URL" value={data.youtubeUrl} onChange={(v) => handleChange('youtubeUrl', v)} />
+          <Field label="微信公众号/ID" value={data.wechat} onChange={(v) => handleChange('wechat', v)} />
+          <Field label="WhatsApp" value={data.whatsapp} onChange={(v) => handleChange('whatsapp', v)} />
         </Section>
 
+        {/* ─── Contact Info (legacy) ─── */}
+        <Section title="联系方式 (全局)" icon={Mail}>
+          <Field label="客服邮箱" value={data.supportEmail} onChange={(v) => handleChange('supportEmail', v)} placeholder="support@labtest.com" />
+          <Field label="客服电话" value={data.supportPhone} onChange={(v) => handleChange('supportPhone', v)} placeholder="400-123-4567" />
+        </Section>
+
+        {/* ─── Address ─── */}
+        <Section title="地址" icon={MapPin}>
+          <div className="md:col-span-2">
+            <Field label="地址 (中文)" value={data.addressZh} onChange={(v) => handleChange('addressZh', v)} placeholder="中国上海市浦东新区张江高科技园区" type="textarea" />
+          </div>
+        </Section>
+
+        {/* ─── Footer Text ─── */}
         <Section title="页脚文本" icon={FileText}>
           <div className="md:col-span-2">
-            <Field label="页脚文本" value={data.footerTextZh} onChange={(v) => handleChange('footerTextZh', v)} placeholder="页脚介绍文字" type="textarea" />
+            <Field label="页脚介绍 (中文)" value={data.footerTextZh} onChange={(v) => handleChange('footerTextZh', v)} placeholder="页脚介绍文字" type="textarea" />
+          </div>
+          <div className="md:col-span-2">
+            <Field label="页脚介绍 (EN)" value={data.footerTextEn} onChange={(v) => handleChange('footerTextEn', v)} placeholder="Footer description" type="textarea" />
           </div>
         </Section>
 
-        <Section title="SEO / 元数据" icon={FileText}>
-          <Field label="SEO 标题" value={data.seoTitleZh} onChange={(v) => handleChange('seoTitleZh', v)} placeholder="度量衡科研平台 | 专业科研检测服务" />
-          <div className="md:col-span-2">
-            <Field label="SEO 描述" value={data.seoDescriptionZh} onChange={(v) => handleChange('seoDescriptionZh', v)} placeholder="SEO描述文字" type="textarea" />
+        {/* ─── Sensitive App Config ─── */}
+        <Card padding="lg" className="mb-6 border-amber-200">
+          <div className="mb-4 flex items-center gap-2 border-b border-amber-100 pb-3">
+            <ShieldAlert className="h-5 w-5 text-amber-600" />
+            <h2 className="text-lg font-semibold text-gray-900">敏感配置 (API 密钥 / 服务凭证)</h2>
+            <span className="ml-auto rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+              管理员可见 · 不暴露给前端
+            </span>
           </div>
-        </Section>
+
+          <div className="space-y-4">
+            {Object.keys(appConfig).length === 0 ? (
+              <div className="text-sm text-gray-500">暂无敏感配置。请在数据库中初始化 AppConfig 表。</div>
+            ) : (
+              Object.entries(appConfig).map(([key, value]) => (
+                <div key={key} className="flex items-center gap-3">
+                  <div className="w-48 shrink-0">
+                    <label className="block text-xs font-medium text-gray-600">{key}</label>
+                  </div>
+                  <div className="relative flex-1">
+                    <Input
+                      type={showSensitive[key] ? 'text' : 'password'}
+                      value={value}
+                      onChange={(e) => setAppConfig((prev) => ({ ...prev, [key]: e.target.value }))}
+                      className="pr-10 text-sm font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSensitive((prev) => ({ ...prev, [key]: !prev[key] }))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showSensitive[key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleSaveAppConfig(key, appConfig[key] || '')}
+                    loading={savingAppConfig}
+                  >
+                    <KeyRound className="mr-1 h-3.5 w-3.5" />
+                    保存
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
 
         <div className="flex justify-end pb-8">
           <Button onClick={handleSave} loading={saving} size="lg">
@@ -354,6 +505,13 @@ export default function AdminSiteSettingsPage() {
           </Button>
         </div>
       </div>
+
+      <MediaPicker
+        isOpen={!!mediaPickerField}
+        onClose={() => setMediaPickerField(null)}
+        onSelect={handleMediaSelect}
+        folder="settings"
+      />
     </AdminLayout>
   );
 }

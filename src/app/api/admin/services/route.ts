@@ -1,6 +1,5 @@
 import { Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import {
   successResponse,
@@ -142,6 +141,24 @@ const handlePost = async (request: NextRequest, user: JWTPayload) => {
         },
       },
     });
+
+    // Link service to lab if labId is provided
+    if (data.labId) {
+      await prisma.labService.upsert({
+        where: {
+          labId_serviceId: {
+            labId: data.labId,
+            serviceId: service.id,
+          },
+        },
+        update: {},
+        create: {
+          labId: data.labId,
+          serviceId: service.id,
+          isActive: true,
+        },
+      });
+    }
 
     await prisma.auditLog.create({
       data: {

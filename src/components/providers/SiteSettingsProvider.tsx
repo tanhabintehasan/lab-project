@@ -13,13 +13,26 @@ interface SiteSettings {
   siteNameEn?: string | null;
   logoUrl?: string | null;
   logoUploadUrl?: string | null;
-  brandColor?: string | null;
   faviconUrl?: string | null;
+  brandColor?: string | null;
   supportEmail?: string | null;
   supportPhone?: string | null;
   addressZh?: string | null;
   footerTextZh?: string | null;
   footerTextEn?: string | null;
+  footerCopyrightZh?: string | null;
+  footerCopyrightEn?: string | null;
+  footerContactPhone?: string | null;
+  footerContactEmail?: string | null;
+  footerContactAddress?: string | null;
+  footerIcp?: string | null;
+  footerSocialLinks?: Record<string, any> | null;
+  seoTitleZh?: string | null;
+  seoTitleEn?: string | null;
+  seoDescriptionZh?: string | null;
+  seoDescriptionEn?: string | null;
+  seoKeywordsZh?: string | null;
+  seoKeywordsEn?: string | null;
 }
 
 interface SiteSettingsContextValue {

@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       name: user.name || user.email,
       avatar: user.avatar || undefined,
       locale: user.locale || undefined,
+      phone: user.phone || undefined,
     });
 
     await prisma.session.update({
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: user.id,
         email: user.email,
+        phone: user.phone,
         name: user.name || user.email,
         role: user.role,
         avatar: user.avatar,

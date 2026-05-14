@@ -11,7 +11,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { formatDate } from '@/lib/utils';
-import { Inbox, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Inbox, Plus, Pencil, Trash2, Eye, EyeOff, LayoutTemplate } from 'lucide-react';
 
 interface CMSPageItem {
   id: string;
@@ -76,10 +76,16 @@ export default function AdminCMSPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">内容管理</h1>
-          <Button onClick={() => router.push('/admin/cms/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            新建页面
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push('/admin/cms/homepage')}>
+              <LayoutTemplate className="mr-2 h-4 w-4" />
+              首页管理
+            </Button>
+            <Button onClick={() => router.push('/admin/cms/new')}>
+              <Plus className="mr-2 h-4 w-4" />
+              新建页面
+            </Button>
+          </div>
         </div>
 
         <SearchInput placeholder="搜索标题或别名..." onSearch={(v) => { setSearch(v); setPage(1); }} className="max-w-xs" />

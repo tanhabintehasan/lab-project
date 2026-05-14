@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { FlaskConical, ArrowLeft, CheckCircle2 } from 'lucide-react';
+// NOTE: lucide-react icons temporarily replaced with static text for reconciliation audit
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card } from '@/components/ui/card';
@@ -44,8 +44,8 @@ export default function ForgotPasswordPage() {
       <main className="flex-1 flex items-center justify-center bg-gray-50 py-12 px-4">
         <Card className="w-full max-w-md" padding="lg">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4">
-              {sent ? <CheckCircle2 className="h-6 w-6 text-green-600" /> : <FlaskConical className="h-6 w-6 text-blue-600" />}
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4 text-blue-600 text-xl font-bold">
+              密
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{t('forgotPassword')}</h1>
             <p className="text-sm text-gray-500 mt-1">
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
                 如果该邮箱已注册，重置邮件已发送至 <strong>{email}</strong>
               </div>
               <Link href="/auth/login" className="flex items-center justify-center gap-2 text-sm text-blue-600 hover:text-blue-700">
-                <ArrowLeft className="h-4 w-4" />返回登录
+                ← 返回登录
               </Link>
             </div>
           ) : (
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
               <Input id="email" type="email" label={t('email')} placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
               <Button type="submit" fullWidth loading={loading} size="lg">发送重置邮件</Button>
               <Link href="/auth/login" className="flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700">
-                <ArrowLeft className="h-4 w-4" />返回登录
+                ← 返回登录
               </Link>
             </form>
           )}

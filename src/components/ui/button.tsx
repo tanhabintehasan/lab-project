@@ -35,12 +35,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         {...props}
       >
-        {loading && (
-          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        )}
+        {/* Spinner is always in the DOM; visibility toggled via CSS.
+            Prevents React from inserting/removing a DOM node during loading
+            transitions, which can race with concurrent reconciler updates. */}
+        <span className={cn('inline-flex h-4 w-4 items-center justify-center', !loading && 'hidden')}>
+          <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent opacity-70" />
+        </span>
         {children}
       </button>
     );

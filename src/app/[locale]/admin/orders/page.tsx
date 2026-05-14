@@ -9,10 +9,48 @@ import { SearchInput } from '@/components/ui/search-input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Pagination } from '@/components/ui/pagination';
 import { TableSkeleton } from '@/components/ui/skeleton';
-import { Download, Eye } from 'lucide-react';
+import { Download, Eye, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/store/auth-store';
 import { Link } from '@/i18n/routing';
 import { formatDate, formatCurrency } from '@/lib/utils';
+
+function OrderStatusBadge({ status }: { status: string }) {
+  const variantMap: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info' | 'outline'> = {
+    PENDING_PAYMENT: 'warning',
+    PAID: 'info',
+    SAMPLE_PENDING: 'default',
+    SAMPLE_SHIPPED: 'default',
+    SAMPLE_RECEIVED: 'info',
+    SAMPLE_INSPECTED: 'info',
+    TESTING_IN_PROGRESS: 'info',
+    TESTING_COMPLETE: 'success',
+    REPORT_GENERATING: 'info',
+    REPORT_APPROVED: 'success',
+    REPORT_DELIVERED: 'success',
+    COMPLETED: 'success',
+    CANCELLED: 'danger',
+    REFUNDING: 'warning',
+    REFUNDED: 'outline',
+  };
+  const labelMap: Record<string, string> = {
+    PENDING_PAYMENT: '待支付',
+    PAID: '已支付',
+    SAMPLE_PENDING: '待寄样',
+    SAMPLE_SHIPPED: '已寄样',
+    SAMPLE_RECEIVED: '已收样',
+    SAMPLE_INSPECTED: '已检验',
+    TESTING_IN_PROGRESS: '检测中',
+    TESTING_COMPLETE: '检测完成',
+    REPORT_GENERATING: '报告生成中',
+    REPORT_APPROVED: '报告就绪',
+    REPORT_DELIVERED: '报告已送达',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+    REFUNDING: '退款中',
+    REFUNDED: '已退款',
+  };
+  return <Badge variant={variantMap[status] || 'default'}>{labelMap[status] || status}</Badge>;
+}
 
 export default function AdminOrdersPage() {
   // Auth via HttpOnly cookie
@@ -58,9 +96,12 @@ export default function AdminOrdersPage() {
             { key: '', label: '全部' },
             { key: 'PENDING_PAYMENT', label: '待支付' },
             { key: 'PAID', label: '已支付' },
+            { key: 'SAMPLE_RECEIVED', label: '已收样' },
             { key: 'TESTING_IN_PROGRESS', label: '检测中' },
+            { key: 'REPORT_APPROVED', label: '报告就绪' },
             { key: 'COMPLETED', label: '已完成' },
             { key: 'CANCELLED', label: '已取消' },
+            { key: 'REFUNDING', label: '退款中' },
           ].map(s => (
             <button key={s.key} onClick={() => { setStatusFilter(s.key); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-sm ${statusFilter === s.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
@@ -84,11 +125,11 @@ export default function AdminOrdersPage() {
                       <TableCell className="font-mono text-sm">{o.orderNo as string}</TableCell>
                       <TableCell className="text-sm">{usr?.name || usr?.email || '-'}</TableCell>
                       <TableCell className="font-medium">{formatCurrency(Number(o.totalAmount))}</TableCell>
-                      <TableCell><Badge variant="info">{o.status as string}</Badge></TableCell>
+                      <TableCell><OrderStatusBadge status={o.status as string} /></TableCell>
                       <TableCell className="text-sm">{lab?.nameZh || '未分配'}</TableCell>
                       <TableCell className="text-sm text-gray-500">{formatDate(o.createdAt as string)}</TableCell>
                       <TableCell>
-                        <Link href={`/dashboard/orders/${o.id as string}`}>
+                        <Link href={`/admin/orders/${o.id as string}`}>
                           <Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button>
                         </Link>
                       </TableCell>

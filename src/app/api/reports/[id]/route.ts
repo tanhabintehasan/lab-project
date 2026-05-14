@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
+import { deriveReportPassword } from '@/lib/report-processor';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
@@ -9,14 +10,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const report = await prisma.report.findFirst({
-      where: { id, order: { userId: user.userId } },
+      where: { id, order: { userId: user.userId }, status: 'PUBLISHED' },
       include: {
         order: { select: { orderNo: true, id: true, userId: true } },
         attachments: true,
       },
     });
     if (!report) return errorResponse('报告不存在', 404);
-    return successResponse(report);
+
+    // Compute PDF password for the customer
+    const pdfPassword = deriveReportPassword(report.order.orderNo, report.reportNo);
+
+    return successResponse({ ...report, pdfPassword });
   } catch {
     return errorResponse('获取失败', 500);
   }

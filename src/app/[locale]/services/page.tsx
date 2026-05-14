@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { ServiceCardSkeleton } from '@/components/ui/skeleton';
+import { RecommendedServices } from '@/components/services/recommended-services';
 
 type ServiceCategory = {
   id: string;
@@ -67,6 +68,7 @@ type NormalizedService = {
   standards: string[];
   materials: string[];
   hot: boolean;
+  image: string | null;
 };
 
 function extractArray<T>(payload: unknown): T[] {
@@ -204,6 +206,7 @@ function normalizeService(item: ApiService, t: any): NormalizedService {
     standards: normalizeStringArray(item.standards),
     materials: normalizeStringArray(item.materials),
     hot: Boolean(item.isHot || item.hot || item.isFeatured),
+    image: item.image || null,
   };
 }
 
@@ -225,6 +228,23 @@ export default function ServicesPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Track category browsing for AI recommendations
+  useEffect(() => {
+    if (selectedCategory === 'all') return;
+    const cat = categories.find(c => (c.slug || c.id) === selectedCategory);
+    if (!cat) return;
+    // Fire-and-forget tracking
+    fetch('/api/services/track-view', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        categoryId: cat.id,
+        sourcePage: 'services_list',
+      }),
+    }).catch(() => {});
+  }, [selectedCategory, categories]);
 
   const categoryOptions = useMemo(() => {
     return [
@@ -432,10 +452,14 @@ export default function ServicesPage() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
 
-      <section className="bg-gradient-to-r from-blue-700 to-blue-900 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
-          <p className="text-blue-100 text-lg mb-8 max-w-2xl mx-auto">
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white py-10">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-blue-500 blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-indigo-500 blur-3xl" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">{t('title')}</h1>
+          <p className="text-slate-300 text-base md:text-lg mb-6 max-w-2xl mx-auto">
             {t('subtitle')}
           </p>
 
@@ -449,19 +473,19 @@ export default function ServicesPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submitSearch();
               }}
-              className="w-full pl-12 pr-24 py-4 rounded-xl text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-blue-300"
+              className="w-full pl-12 pr-28 py-3.5 rounded-xl text-gray-900 text-base focus:outline-none focus:ring-4 focus:ring-indigo-300/50 shadow-lg"
             />
             <button
               type="button"
               onClick={submitSearch}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg transition"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg transition font-medium"
             >
               {tCommon('search')}
             </button>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <span className="text-blue-200 text-sm">{t('hotSearch')}</span>
+          <div className="flex flex-wrap justify-center gap-2 mt-5">
+            <span className="text-slate-400 text-sm">{t('hotSearch')}</span>
             {['拉伸测试', '盐雾试验', 'RoHS检测', '硬度测试', '食品安全'].map((tag) => (
               <button
                 key={tag}
@@ -479,6 +503,10 @@ export default function ServicesPage() {
           </div>
         </div>
       </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <RecommendedServices />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         <div className="flex gap-8">
@@ -699,15 +727,24 @@ export default function ServicesPage() {
                       }`}
                     >
                       <div
-                        className={`bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center relative ${
+                        className={`relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center ${
                           viewMode === 'list'
-                            ? 'w-48 h-36 rounded-lg flex-shrink-0'
-                            : 'h-48 rounded-t-xl'
+                            ? 'w-48 aspect-video rounded-lg flex-shrink-0'
+                            : 'aspect-video rounded-t-xl'
                         }`}
                       >
-                        <Beaker className="w-12 h-12 text-blue-300" />
+                        {service.image ? (
+                          <img
+                            src={service.image}
+                            alt={service.name}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <Beaker className="w-12 h-12 text-blue-300" />
+                        )}
                         {service.hot && (
-                          <span className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                          <span className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium z-10">
                             {t('hot')}
                           </span>
                         )}

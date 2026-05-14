@@ -97,6 +97,25 @@ export const orderUpdateSchema = z.object({
   assignedLabId: z.string().cuid().optional(),
 }).refine(d => d.status || d.assignedLabId, { message: 'Must provide status or assignedLabId' });
 
+// Linear progression order for backward-transition detection
+export const STATUS_ORDER = [
+  'PENDING_PAYMENT', 'PAID', 'SAMPLE_PENDING', 'SAMPLE_SHIPPED', 'SAMPLE_RECEIVED',
+  'SAMPLE_INSPECTED', 'TESTING_IN_PROGRESS', 'TESTING_COMPLETE', 'REPORT_GENERATING',
+  'REPORT_APPROVED', 'REPORT_DELIVERED', 'COMPLETED',
+] as const;
+
+const TERMINAL_STATUSES = ['CANCELLED', 'REFUNDING', 'REFUNDED'];
+
+function isBackward(currentStatus: string, newStatus: string): boolean {
+  if (currentStatus === newStatus) return false;
+  // Terminal statuses are never considered "backward" (they end the flow)
+  if (TERMINAL_STATUSES.includes(newStatus)) return false;
+  const currentIndex = STATUS_ORDER.indexOf(currentStatus as typeof STATUS_ORDER[number]);
+  const newIndex = STATUS_ORDER.indexOf(newStatus as typeof STATUS_ORDER[number]);
+  if (currentIndex === -1 || newIndex === -1) return false;
+  return newIndex < currentIndex;
+}
+
 // Allowed transitions per role
 export const ORDER_TRANSITIONS: Record<string, Record<string, string[]>> = {
   SUPER_ADMIN: {
@@ -121,9 +140,14 @@ export const ORDER_TRANSITIONS: Record<string, Record<string, string[]>> = {
 };
 
 export function isValidTransition(role: string, currentStatus: string, newStatus: string): boolean {
+  if (currentStatus === newStatus) return true;
+
+  // Global hard rule: NO backward transitions for any role
+  if (isBackward(currentStatus, newStatus)) return false;
+
   const roleTransitions = ORDER_TRANSITIONS[role];
   if (!roleTransitions) return false;
-  // Wildcard for SUPER_ADMIN
+  // Wildcard for SUPER_ADMIN (forward / same / terminal only because backward is blocked above)
   if (roleTransitions['*']) return true;
   const allowed = roleTransitions[currentStatus];
   return !!allowed && allowed.includes(newStatus);
@@ -148,6 +172,7 @@ export const serviceCustomFieldSchema = z.object({
 export const adminServiceCreateSchema = z.object({
   slug: z.string().max(200).optional(),
   categoryId: z.string().min(1),
+  labId: z.string().cuid().optional(),
   nameZh: z.string().min(1).max(200),
   nameEn: z.string().max(200).optional(),
   shortDescZh: z.string().max(500).optional(),
@@ -181,6 +206,7 @@ export const adminLabCreateSchema = z.object({
   phone: z.string().max(20).optional(),
   email: z.string().email().optional(),
   status: z.enum(['PENDING', 'ACTIVE', 'SUSPENDED', 'INACTIVE']).optional(),
+  imageUrl: z.string().max(500).optional().nullable(),
 });
 
 export const adminLabStatusSchema = z.object({
@@ -200,6 +226,7 @@ export const adminEquipmentCreateSchema = z.object({
   quantity: z.number().int().min(1).default(1),
   hourlyRate: z.number().nonnegative().optional(),
   dailyRate: z.number().nonnegative().optional(),
+  imageUrl: z.string().max(500).optional().nullable(),
 });
 
 export const cmsPageSchema = z.object({
@@ -262,11 +289,27 @@ export const siteSettingSchema = z.object({
   youtubeUrl: z.string().max(500).optional().nullable(),
   footerTextZh: z.string().max(5000).optional().nullable(),
   footerTextEn: z.string().max(5000).optional().nullable(),
+  footerCopyrightZh: z.string().max(500).optional().nullable(),
+  footerCopyrightEn: z.string().max(500).optional().nullable(),
+  footerContactPhone: z.string().max(50).optional().nullable(),
+  footerContactEmail: z.union([z.string().email(), z.literal('')]).optional().nullable(),
+  footerContactAddress: z.string().max(500).optional().nullable(),
+  footerIcp: z.string().max(200).optional().nullable(),
+  footerSocialLinks: z.record(z.any()).optional().nullable(),
   seoTitleZh: z.string().max(200).optional().nullable(),
   seoTitleEn: z.string().max(200).optional().nullable(),
   seoDescriptionZh: z.string().max(500).optional().nullable(),
   seoDescriptionEn: z.string().max(500).optional().nullable(),
+  seoKeywordsZh: z.string().max(500).optional().nullable(),
+  seoKeywordsEn: z.string().max(500).optional().nullable(),
   metadata: z.record(z.any()).optional().nullable(),
+});
+
+export const appConfigSchema = z.object({
+  key: z.string().min(1).max(100),
+  value: z.string().max(2000),
+  category: z.string().max(50).optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
 });
 
 // CMS Section

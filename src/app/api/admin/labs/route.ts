@@ -42,7 +42,20 @@ const handlePost = async (request: NextRequest, user: JWTPayload) => {
     const data = adminLabCreateSchema.parse(body);
     const slug = data.slug || data.nameZh.replace(/\s+/g, '-').toLowerCase() + '-' + Date.now().toString(36);
     const lab = await prisma.laboratory.create({
-      data: { slug, nameZh: data.nameZh, nameEn: data.nameEn, shortDescZh: data.shortDescZh, fullDescZh: data.fullDescZh, address: data.address, city: data.city, province: data.province, phone: data.phone, email: data.email, status: data.status || 'PENDING' },
+      data: {
+        slug,
+        nameZh: data.nameZh,
+        nameEn: data.nameEn,
+        shortDescZh: data.shortDescZh,
+        fullDescZh: data.fullDescZh,
+        address: data.address,
+        city: data.city,
+        province: data.province,
+        phone: data.phone,
+        email: data.email,
+        status: data.status || 'PENDING',
+        imageUrl: data.imageUrl?.trim() || null,
+      },
     });
     await prisma.auditLog.create({
       data: { userId: user.userId, action: 'ADMIN_CREATE_LAB', entity: 'Laboratory', entityId: lab.id },

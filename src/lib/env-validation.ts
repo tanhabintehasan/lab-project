@@ -69,7 +69,9 @@ export function validateEnv(): EnvConfig {
   // Validate URLs format
   try {
     new URL(process.env.NEXT_PUBLIC_SITE_URL!);
-    new URL(process.env.NEXTAUTH_URL!);
+    if (process.env.NEXTAUTH_URL) {
+      new URL(process.env.NEXTAUTH_URL);
+    }
   } catch (error) {
     throw new Error('Invalid URL format in environment variables');
   }

@@ -42,6 +42,7 @@ interface EquipmentItem {
   quantity: number;
   hourlyRate?: string | number | null;
   dailyRate?: string | number | null;
+  imageUrl?: string | null;
   createdAt: string;
 }
 
@@ -87,6 +88,7 @@ const initialForm = {
   quantity: '1',
   hourlyRate: '',
   dailyRate: '',
+  imageUrl: '',
 };
 
 export default function AdminEquipmentPage() {
@@ -209,6 +211,16 @@ export default function AdminEquipmentPage() {
         }
       }
     } catch {}
+    // Extract image URL from images JSON (stored as { urls: [...] })
+    let imageUrl = '';
+    if ((fullEq as any).images) {
+      try {
+        const imgData = typeof (fullEq as any).images === 'string'
+          ? JSON.parse((fullEq as any).images)
+          : (fullEq as any).images;
+        if (imgData?.urls?.length > 0) imageUrl = imgData.urls[0];
+      } catch { /* ignore */ }
+    }
     setForm({
       nameZh: fullEq.nameZh || '',
       // nameEn removed - Chinese only
@@ -221,6 +233,7 @@ export default function AdminEquipmentPage() {
       quantity: String(fullEq.quantity ?? 1),
       hourlyRate: fullEq.hourlyRate !== undefined && fullEq.hourlyRate !== null ? String(fullEq.hourlyRate) : '',
       dailyRate: fullEq.dailyRate !== undefined && fullEq.dailyRate !== null ? String(fullEq.dailyRate) : '',
+      imageUrl,
     });
     setModalOpen(true);
   };
@@ -252,6 +265,7 @@ export default function AdminEquipmentPage() {
         quantity: quantityNum,
         hourlyRate: form.hourlyRate ? parseFloat(form.hourlyRate) : undefined,
         dailyRate: form.dailyRate ? parseFloat(form.dailyRate) : undefined,
+        imageUrl: form.imageUrl.trim() || null,
       };
 
       const res = await fetch(
@@ -506,6 +520,84 @@ export default function AdminEquipmentPage() {
               onChange={(e) => setForm((p) => ({ ...p, descZh: e.target.value }))}
             />
           </div>
+
+          {/* Dual-mode image upload */}
+          <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+            <label className="block text-sm font-medium text-gray-700">设备图片</label>
+
+            {/* URL input */}
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">图片链接</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://example.com/image.jpg"
+                  value={form.imageUrl}
+                  onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))}
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                />
+                {form.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, imageUrl: '' }))}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-500 hover:text-red-500 transition"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* File upload */}
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">或上传文件</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    setSaving(true);
+                    const uploadForm = new FormData();
+                    uploadForm.append('file', file);
+                    uploadForm.append('folder', 'equipment');
+                    uploadForm.append('entityType', 'EQUIPMENT');
+                    const res = await fetch('/api/admin/upload', {
+                      method: 'POST',
+                      credentials: 'include',
+                      body: uploadForm,
+                    });
+                    const data = await res.json();
+                    if (res.ok && data?.success && data.data?.url) {
+                      setForm((p) => ({ ...p, imageUrl: data.data.url }));
+                    } else {
+                      setError(data?.error || '上传图片失败');
+                    }
+                  } catch {
+                    setError('上传图片失败');
+                  } finally {
+                    setSaving(false);
+                    e.target.value = '';
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+
+            {/* Preview */}
+            {form.imageUrl && (
+              <div className="relative h-32 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                <img
+                  src={form.imageUrl}
+                  alt="Preview"
+                  className="h-full w-full object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">状态</label>

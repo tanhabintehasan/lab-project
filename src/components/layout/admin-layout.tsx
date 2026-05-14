@@ -28,6 +28,7 @@ import {
   Zap,
   FolderTree,
   CalendarDays,
+  FileJson,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -119,6 +120,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   useEffect(() => {
     if (!user) return;
 
+    // Strict RBAC guard: only SUPER_ADMIN and FINANCE_ADMIN may access /admin
+    const allowedAdminRoles = ['SUPER_ADMIN', 'FINANCE_ADMIN'] as const;
+    if (!allowedAdminRoles.includes(user.role as typeof allowedAdminRoles[number])) {
+      router.replace('/');
+      return;
+    }
+
     const superAdminOnlyPaths = [
       '/admin/dashboard',
       '/admin/users',
@@ -182,6 +190,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin/cms', icon: Newspaper, label: t('cms') },
     { href: '/admin/site-settings', icon: Globe, label: '网站设置' },
     { href: '/admin/translations', icon: Globe, label: t('translations') },
+    { href: '/admin/translations/editor', icon: FileJson, label: 'JSON 翻译' },
     { href: '/admin/analytics', icon: BarChart3, label: t('analytics') },
     { href: '/admin/settings/payments', icon: CreditCard, label: '支付管理' },
     { href: '/admin/settings/webhook-logs', icon: Zap, label: 'Webhook日志' },
@@ -247,6 +256,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             pathname === item.href ||
             (item.href !== '/admin/dashboard' &&
               item.href !== '/admin/finance' &&
+              item.href !== '/admin/translations' &&
               pathname.startsWith(item.href));
 
           return (

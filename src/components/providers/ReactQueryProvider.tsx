@@ -15,8 +15,9 @@ export function ReactQueryProvider({ children }: { children: React.ReactNode }) 
           queries: {
             // Stale time: data is considered fresh for 30 seconds
             staleTime: 30 * 1000,
-            // Refetch on window focus
-            refetchOnWindowFocus: true,
+            // DISABLED: refetch on window focus causes unpredictable
+            // re-renders that can race with auth-state transitions.
+            refetchOnWindowFocus: false,
             // Refetch on mount if data is stale
             refetchOnMount: true,
             // Retry failed requests

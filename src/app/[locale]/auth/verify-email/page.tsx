@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
-import { Mail, CheckCircle2, Loader2 } from 'lucide-react';
+// NOTE: lucide-react icons temporarily replaced with static text for reconciliation audit
 
 function VerifyEmailForm() {
   const router = useRouter();
@@ -94,7 +94,7 @@ function VerifyEmailForm() {
       <Card className="w-full max-w-md" padding="lg">
         <div className="text-center">
           <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+            <span className="text-2xl text-emerald-600 font-bold">✓</span>
           </div>
           <h1 className="mb-2 text-2xl font-bold text-gray-900">验证成功</h1>
           <p className="text-gray-600">正在跳转到个人中心…</p>
@@ -107,7 +107,7 @@ function VerifyEmailForm() {
     <Card className="w-full max-w-md" padding="lg">
       <div className="text-center mb-8">
         <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
-          <Mail className="h-6 w-6 text-blue-600" />
+          <span className="text-blue-600 text-xl font-bold">✉</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900">验证您的邮箱</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -142,7 +142,6 @@ function VerifyEmailForm() {
           required
         />
         <Button type="submit" fullWidth size="lg" loading={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           验证并登录
         </Button>
       </form>

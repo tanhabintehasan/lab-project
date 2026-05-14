@@ -1,13 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setUser } = useAuthStore();
+  const setUser = useAuthStore((state) => state.setUser);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    let mounted = true;
+    // Prevent double-run in Strict Mode or re-mount scenarios.
+    // We use a ref (not state) so this check does not trigger a render.
+    if (initialized.current) return;
+    initialized.current = true;
+
+    let active = true;
 
     const initAuth = async () => {
       try {
@@ -16,15 +22,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           cache: 'no-store',
         });
         const data = await res.json();
-        if (mounted) {
-          if (data?.success && data.data) {
-            setUser(data.data);
-          } else {
+        if (!active) return;
+
+        if (data?.success && data.data) {
+          setUser(data.data);
+        } else {
+          // Only clear user if currently set — prevents unnecessary
+          // re-renders of every component subscribed to auth state.
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser !== null) {
             setUser(null);
           }
         }
       } catch {
-        if (mounted) {
+        if (!active) return;
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser !== null) {
           setUser(null);
         }
       }
@@ -33,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     return () => {
-      mounted = false;
+      active = false;
     };
   }, [setUser]);
 

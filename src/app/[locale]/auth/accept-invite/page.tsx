@@ -7,7 +7,7 @@ import { Footer } from '@/components/layout/footer';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Building2, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Building2, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function AcceptInvitePage() {
   const router = useRouter();
@@ -85,13 +85,13 @@ export default function AcceptInvitePage() {
         <Card className="w-full max-w-md" padding="lg">
           {loading ? (
             <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+              <div className="h-8 w-8 mx-auto mb-4 rounded-full border-2 border-blue-200 border-t-blue-600" />
               <p className="text-gray-600">加载中...</p>
             </div>
           ) : error ? (
             <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-xl mb-4">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-xl mb-4 text-red-600 text-xl font-bold">
+                !
               </div>
               <h1 className="text-2xl font-bold text-gray-900">邀请无效</h1>
               <p className="text-red-600">{error}</p>
@@ -99,8 +99,8 @@ export default function AcceptInvitePage() {
             </div>
           ) : success ? (
             <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl mb-4">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl mb-4 text-green-600 text-xl font-bold">
+                ✓
               </div>
               <h1 className="text-2xl font-bold text-gray-900">欢迎加入！</h1>
               <p className="text-gray-600">正在跳转到企业工作台...</p>
@@ -108,8 +108,8 @@ export default function AcceptInvitePage() {
           ) : (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4">
-                  <Building2 className="h-6 w-6 text-blue-600" />
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4 text-blue-600 text-xl font-bold">
+                  企
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900">企业邀请</h1>
                 <p className="text-gray-600 mt-2">

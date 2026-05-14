@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { canAccessReport } from '@/lib/company-scope';
+import { deriveReportPassword } from '@/lib/report-processor';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const report = await prisma.report.findUnique({
       where: { id },
       include: {
+        order: { select: { orderNo: true } },
         attachments: true,
       },
     });
@@ -34,16 +36,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
 
-    // In production, you would:
-    // 1. Generate a signed URL for the file
-    // 2. Return a redirect to the signed URL
-    // For now, return the file URL
-
     const mainAttachment = report.attachments[0];
-    if (!mainAttachment) return errorResponse('报告文件不存在', 404);
+    const downloadUrl = mainAttachment?.fileUrl || report.fileUrl;
+    if (!downloadUrl) return errorResponse('报告文件不存在', 404);
 
-    // Redirect to file URL
-    return Response.redirect(mainAttachment.fileUrl, 302);
+    // Compute PDF password
+    const pdfPassword = deriveReportPassword(report.order.orderNo, report.reportNo);
+
+    return Response.json({
+      success: true,
+      downloadUrl,
+      pdfPassword,
+      reportNo: report.reportNo,
+    });
   } catch (error) {
     console.error('Report download error:', error);
     return errorResponse('下载失败', 500);

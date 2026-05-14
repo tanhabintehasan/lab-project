@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!reportNo || reportNo.length > 50) return errorResponse('请输入报告编号', 400);
 
     const report = await prisma.report.findUnique({
-      where: { reportNo },
+      where: { reportNo, status: 'PUBLISHED' },
       select: { id: true, reportNo: true, title: true, status: true, issuedAt: true, order: { select: { orderNo: true } } },
     });
     if (!report) return errorResponse('报告未找到', 404);

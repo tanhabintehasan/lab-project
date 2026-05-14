@@ -95,6 +95,25 @@ export async function PATCH(
       }
     }
 
+    // Gate: do not allow TESTING_IN_PROGRESS until all samples are RECEIVED
+    if (data.status === 'TESTING_IN_PROGRESS') {
+      const samples = await prisma.sample.findMany({
+        where: { id },
+        select: { status: true },
+      });
+      if (samples.length > 0) {
+        const pending = samples.filter(
+          (s) => s.status === 'PENDING_SUBMISSION' || s.status === 'SHIPPED'
+        );
+        if (pending.length > 0) {
+          return errorResponse(
+            `Cannot start testing: ${pending.length} sample(s) not yet received by the lab`,
+            422
+          );
+        }
+      }
+    }
+
     if (data.assignedLabId && !isAdmin(user.role)) {
       return errorResponse('只有管理员可以分配实验室', 403);
     }

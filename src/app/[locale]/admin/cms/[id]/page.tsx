@@ -8,7 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, CheckCircle2, XCircle, ChevronDown, ChevronUp, LayoutTemplate, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, CheckCircle2, XCircle, ChevronDown, ChevronUp, LayoutTemplate, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { MediaPicker } from '@/components/admin/media-picker';
 
 interface CMSItemPoint {
   id: string;
@@ -111,6 +112,11 @@ export default function AdminCMSEditPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [mediaPickerTarget, setMediaPickerTarget] = useState<{
+    sectionId: string;
+    itemId?: string;
+    field: 'sectionImage' | 'itemImage';
+  } | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -269,6 +275,21 @@ export default function AdminCMSEditPage() {
         ),
       };
     });
+  };
+
+  const openMediaPicker = (sectionId: string, field: 'sectionImage' | 'itemImage', itemId?: string) => {
+    setMediaPickerTarget({ sectionId, itemId, field });
+  };
+
+  const handleMediaSelect = (url: string) => {
+    if (!mediaPickerTarget) return;
+    const { sectionId, itemId, field } = mediaPickerTarget;
+    if (field === 'sectionImage') {
+      updateSection(sectionId, { imageUrl: url });
+    } else if (itemId) {
+      updateItem(sectionId, itemId, { imageUrl: url });
+    }
+    setMediaPickerTarget(null);
   };
 
   const removePoint = (sectionId: string, itemId: string, pointId: string) => {
@@ -580,8 +601,26 @@ export default function AdminCMSEditPage() {
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-700">图片 URL</label>
-                        <Input value={sec.imageUrl || ''} onChange={(e) => updateSection(sec.id, { imageUrl: e.target.value })} placeholder="/images/hero.jpg" />
+                        <label className="mb-1 block text-xs font-medium text-gray-700">图片</label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openMediaPicker(sec.id, 'sectionImage')}
+                            className="relative flex h-16 w-24 items-center justify-center overflow-hidden rounded border border-dashed border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50"
+                          >
+                            {sec.imageUrl ? (
+                              <img src={sec.imageUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-gray-400" />
+                            )}
+                          </button>
+                          <Input
+                            className="flex-1 text-xs"
+                            value={sec.imageUrl || ''}
+                            onChange={(e) => updateSection(sec.id, { imageUrl: e.target.value })}
+                            placeholder="点击左侧选择图片或输入 URL"
+                          />
+                        </div>
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-700">排序</label>
@@ -627,13 +666,26 @@ export default function AdminCMSEditPage() {
                                 />
                               </div>
                               <div className="md:col-span-2">
-                                <label className="mb-1 block text-[10px] font-medium text-gray-500">图片 URL</label>
-                                <Input
-                                  className="text-sm"
-                                  value={item.imageUrl || ''}
-                                  onChange={(e) => updateItem(sec.id, item.id, { imageUrl: e.target.value })}
-                                  placeholder="/images/..."
-                                />
+                                <label className="mb-1 block text-[10px] font-medium text-gray-500">图片</label>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openMediaPicker(sec.id, 'itemImage', item.id)}
+                                    className="relative flex h-12 w-16 items-center justify-center overflow-hidden rounded border border-dashed border-gray-300 bg-gray-50 hover:border-blue-400"
+                                  >
+                                    {item.imageUrl ? (
+                                      <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                                    ) : (
+                                      <ImageIcon className="h-4 w-4 text-gray-400" />
+                                    )}
+                                  </button>
+                                  <Input
+                                    className="flex-1 text-sm"
+                                    value={item.imageUrl || ''}
+                                    onChange={(e) => updateItem(sec.id, item.id, { imageUrl: e.target.value })}
+                                    placeholder="点击左侧选择图片或输入 URL"
+                                  />
+                                </div>
                               </div>
                               <div className="md:col-span-1">
                                 <label className="mb-1 block text-[10px] font-medium text-gray-500">排序</label>
@@ -727,6 +779,13 @@ export default function AdminCMSEditPage() {
           </Button>
         </div>
       </div>
+
+      <MediaPicker
+        isOpen={!!mediaPickerTarget}
+        onClose={() => setMediaPickerTarget(null)}
+        onSelect={handleMediaSelect}
+        folder="cms"
+      />
     </AdminLayout>
   );
 }

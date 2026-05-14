@@ -9,17 +9,36 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import { SiteSettingsProvider } from '@/components/providers/SiteSettingsProvider';
 import { BrandColorProvider } from '@/components/providers/BrandColorProvider';
 import { SonnerToaster } from '@/components/ui/sonner-toaster';
+import { ExtensionGuard } from '@/components/providers/ExtensionGuard';
 import { validateEnv } from '@/lib/env-validation';
+import { getPublicSettings } from '@/lib/site-settings-cache';
 import '@/app/globals.css';
 
 // Validate required environment variables at startup (build + runtime)
 validateEnv();
 
-export const metadata: Metadata = {
-  title: '度量衡科研平台 - 立足科学前沿，服务中国创新',
-  description:
-    '一站式检测服务平台，连接企业与优质实验室，提供高效、透明、可靠的检测解决方案',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getPublicSettings();
+
+  const title = settings.seoTitleZh || settings.siteName || '度量衡科研平台';
+  const description =
+    settings.seoDescriptionZh ||
+    '一站式检测服务平台，连接企业与优质实验室，提供高效、透明、可靠的检测解决方案';
+  const keywords = settings.seoKeywordsZh || '检测, 科研, 实验室, 材料测试';
+
+  return {
+    title,
+    description,
+    keywords,
+    icons: settings.faviconUrl ? { icon: settings.faviconUrl } : undefined,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      locale: 'zh_CN',
+    },
+  };
+}
 
 export default async function LocaleLayout({
   children,
@@ -43,8 +62,10 @@ export default async function LocaleLayout({
           <AuthProvider>
             <SiteSettingsProvider>
               <BrandColorProvider>
-                {children}
-                <SonnerToaster />
+                <ExtensionGuard>
+                  {children}
+                  <SonnerToaster />
+                </ExtensionGuard>
               </BrandColorProvider>
             </SiteSettingsProvider>
           </AuthProvider>

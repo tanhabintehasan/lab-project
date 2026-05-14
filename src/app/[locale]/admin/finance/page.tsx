@@ -27,6 +27,11 @@ import {
   FileText,
   Download,
   RefreshCw,
+  Building2,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -54,6 +59,32 @@ interface FinanceStats {
   pendingPayments: number;
   pendingWithdrawals: number;
   issuedInvoices: number;
+}
+
+interface LabWalletItem {
+  id: string;
+  labId: string;
+  labName: string;
+  labSlug: string;
+  labStatus: string;
+  balance: string;
+  frozenAmount: string;
+  totalEarned: string;
+  totalWithdrawn: string;
+  currency: string;
+  transactionCount: number;
+  updatedAt: string;
+}
+
+interface LabEarningsSummary {
+  totalLabWallets: number;
+  totalLabBalance: number;
+  totalLabEarned: number;
+  totalLabWithdrawn: number;
+  totalPayouts: number;
+  totalGrossAmount: number;
+  totalPlatformFees: number;
+  totalNetPaid: number;
 }
 
 function extractArray<T = unknown>(payload: any): T[] {
@@ -84,10 +115,13 @@ export default function AdminFinancePage() {
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [labWallets, setLabWallets] = useState<LabWalletItem[]>([]);
+  const [labSummary, setLabSummary] = useState<LabEarningsSummary | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
-  const [activeTab, setActiveTab] = useState<'payments' | 'transactions'>('payments');
+  const [activeTab, setActiveTab] = useState<'payments' | 'transactions' | 'labEarnings'>('payments');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [refundModal, setRefundModal] = useState<{ open: boolean; paymentId: string | null }>({
@@ -98,7 +132,6 @@ export default function AdminFinancePage() {
 
   useEffect(() => {
     if (!user) return;
-
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'FINANCE_ADMIN') {
       router.replace('/dashboard');
     }
@@ -107,29 +140,23 @@ export default function AdminFinancePage() {
   const fetchStats = useCallback(async () => {
     try {
       setStatsLoading(true);
-
       const res = await fetch('/api/admin/finance', {
         credentials: 'include',
         cache: 'no-store',
       });
-
       if (res.status === 401) {
         router.replace('/auth/login');
         return;
       }
-
       if (res.status === 403) {
         setPageError('您没有权限访问财务统计数据');
         return;
       }
-
       const d = await res.json();
-
       if (!res.ok || !d?.success) {
         setPageError(d?.error || '加载财务统计失败');
         return;
       }
-
       setStats({
         totalRevenue: Number(d?.data?.totalRevenue || 0),
         pendingPayments: Number(d?.data?.pendingPayments || 0),
@@ -154,57 +181,76 @@ export default function AdminFinancePage() {
           credentials: 'include',
           cache: 'no-store',
         });
-
         if (res.status === 401) {
           router.replace('/auth/login');
           return;
         }
-
         const d = await res.json();
-
         if (!res.ok) {
           setPayments([]);
           setTotalPages(1);
           setPageError(d?.error || '加载支付记录失败');
           return;
         }
-
-        const paymentList = extractArray<Payment>(d);
-        setPayments(paymentList);
+        setPayments(extractArray<Payment>(d));
         setTotalPages(extractTotalPages(d));
-      } else {
+      } else if (activeTab === 'transactions') {
         const res = await fetch(`/api/wallet/transactions?page=${page}&all=true`, {
           credentials: 'include',
           cache: 'no-store',
         });
-
         if (res.status === 401) {
           router.replace('/auth/login');
           return;
         }
-
         const d = await res.json();
-
         if (!res.ok) {
           setTransactions([]);
           setTotalPages(1);
           setPageError(d?.error || '加载交易记录失败');
           return;
         }
-
-        const transactionList = extractArray<Transaction>(d);
-        setTransactions(transactionList);
+        setTransactions(extractArray<Transaction>(d));
         setTotalPages(extractTotalPages(d));
+      } else {
+        // labEarnings
+        const res = await fetch(`/api/admin/lab-earnings?page=${page}`, {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (res.status === 401) {
+          router.replace('/auth/login');
+          return;
+        }
+        const d = await res.json();
+        if (!res.ok || !d?.success) {
+          setLabWallets([]);
+          setTotalPages(1);
+          setPageError(d?.error || '加载实验室收益数据失败');
+          return;
+        }
+        setLabSummary(d.data?.summary || null);
+        const labData = d.data?.labs;
+        setLabWallets(extractArray<LabWalletItem>(labData));
+        setTotalPages(extractTotalPages(labData));
       }
     } catch (error) {
       console.error('fetchData error:', error);
       if (activeTab === 'payments') {
         setPayments([]);
-      } else {
+      } else if (activeTab === 'transactions') {
         setTransactions([]);
+      } else {
+        setLabWallets([]);
       }
       setTotalPages(1);
-      setPageError(activeTab === 'payments' ? '加载支付记录失败' : '加载交易记录失败');
+      setPageError(
+        activeTab === 'payments'
+          ? '加载支付记录失败'
+          : activeTab === 'transactions'
+          ? '加载交易记录失败'
+          : '加载实验室收益数据失败'
+      );
     } finally {
       setLoading(false);
     }
@@ -213,20 +259,17 @@ export default function AdminFinancePage() {
   useEffect(() => {
     if (!user) return;
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'FINANCE_ADMIN') return;
-
     fetchStats();
   }, [user, fetchStats]);
 
   useEffect(() => {
     if (!user) return;
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'FINANCE_ADMIN') return;
-
     fetchData();
   }, [user, fetchData]);
 
   const handleRefund = async () => {
     if (!refundModal.paymentId) return;
-
     setRefunding(true);
     try {
       const res = await fetch(`/api/payments/${refundModal.paymentId}/refund`, {
@@ -235,14 +278,11 @@ export default function AdminFinancePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: '管理员操作' }),
       });
-
       const d = await res.json();
-
       if (res.status === 401) {
         router.replace('/auth/login');
         return;
       }
-
       if (d?.success) {
         setRefundModal({ open: false, paymentId: null });
         await fetchStats();
@@ -264,6 +304,16 @@ export default function AdminFinancePage() {
       pending: 'warning',
       failed: 'danger',
       refunded: 'default',
+    };
+    return map[status] || 'default';
+  };
+
+  const labStatusVariant = (status: string) => {
+    const map: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
+      ACTIVE: 'success',
+      PENDING: 'warning',
+      SUSPENDED: 'danger',
+      INACTIVE: 'default',
     };
     return map[status] || 'default';
   };
@@ -374,8 +424,68 @@ export default function AdminFinancePage() {
               >
                 钱包交易
               </button>
+              <button
+                onClick={() => {
+                  setActiveTab('labEarnings');
+                  setPage(1);
+                }}
+                className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                  activeTab === 'labEarnings'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                实验室收益
+              </button>
             </nav>
           </div>
+
+          {activeTab === 'labEarnings' && labSummary && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6 border-b border-gray-200 bg-gray-50/50">
+              <div className="bg-white p-4 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">实验室总数</p>
+                    <p className="text-xl font-bold text-gray-900">{labSummary.totalLabWallets}</p>
+                  </div>
+                  <Building2 className="h-8 w-8 text-blue-500" />
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">总收益（Gross）</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      {formatCurrency(labSummary.totalGrossAmount)}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-green-500" />
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">平台服务费</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      {formatCurrency(labSummary.totalPlatformFees)}
+                    </p>
+                  </div>
+                  <TrendingDown className="h-8 w-8 text-orange-500" />
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">实付净额（Net）</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      {formatCurrency(labSummary.totalNetPaid)}
+                    </p>
+                  </div>
+                  <DollarSign className="h-8 w-8 text-emerald-500" />
+                </div>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <TableSkeleton />
@@ -428,42 +538,98 @@ export default function AdminFinancePage() {
                 </TableBody>
               </Table>
             )
-          ) : transactions.length === 0 ? (
-            <EmptyState icon={DollarSign} title="暂无交易记录" />
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>类型</TableHead>
-                  <TableHead>用户</TableHead>
-                  <TableHead>金额</TableHead>
-                  <TableHead>说明</TableHead>
-                  <TableHead>时间</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell>
-                      <Badge variant={tx.type.includes('PAYMENT') ? 'danger' : 'success'}>
-                        {tx.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{tx.userName || '-'}</TableCell>
-                    <TableCell
-                      className={`font-medium ${
-                        tx.type === 'PAYMENT' ? 'text-red-600' : 'text-green-600'
-                      }`}
-                    >
-                      {tx.type === 'PAYMENT' ? '-' : '+'}
-                      {formatCurrency(tx.amount)}
-                    </TableCell>
-                    <TableCell className="text-gray-600">{tx.description}</TableCell>
-                    <TableCell className="text-gray-500">{formatDate(tx.createdAt)}</TableCell>
+          ) : activeTab === 'transactions' ? (
+            transactions.length === 0 ? (
+              <EmptyState icon={DollarSign} title="暂无交易记录" />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>类型</TableHead>
+                    <TableHead>用户</TableHead>
+                    <TableHead>金额</TableHead>
+                    <TableHead>说明</TableHead>
+                    <TableHead>时间</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell>
+                        <Badge variant={tx.type.includes('PAYMENT') ? 'danger' : 'success'}>
+                          {tx.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{tx.userName || '-'}</TableCell>
+                      <TableCell
+                        className={`font-medium ${
+                          tx.type === 'PAYMENT' ? 'text-red-600' : 'text-green-600'
+                        }`}
+                      >
+                        {tx.type === 'PAYMENT' ? '-' : '+'}
+                        {formatCurrency(tx.amount)}
+                      </TableCell>
+                      <TableCell className="text-gray-600">{tx.description}</TableCell>
+                      <TableCell className="text-gray-500">{formatDate(tx.createdAt)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )
+          ) : labWallets.length === 0 ? (
+            <EmptyState icon={Building2} title="暂无实验室收益数据" />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>实验室</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>余额</TableHead>
+                    <TableHead>冻结</TableHead>
+                    <TableHead>总收益</TableHead>
+                    <TableHead>已提现</TableHead>
+                    <TableHead>交易数</TableHead>
+                    <TableHead>更新时间</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {labWallets.map((w) => (
+                    <TableRow key={w.id}>
+                      <TableCell>
+                        <div className="font-medium text-gray-900">{w.labName}</div>
+                        <div className="text-xs text-gray-500">{w.labSlug}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={labStatusVariant(w.labStatus)}>{w.labStatus}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium text-emerald-600">
+                        {formatCurrency(Number(w.balance))}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {formatCurrency(Number(w.frozenAmount))}
+                      </TableCell>
+                      <TableCell className="text-green-600">
+                        <span className="flex items-center gap-1">
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                          {formatCurrency(Number(w.totalEarned))}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-orange-600">
+                        <span className="flex items-center gap-1">
+                          <ArrowDownRight className="h-3.5 w-3.5" />
+                          {formatCurrency(Number(w.totalWithdrawn))}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-gray-600">{w.transactionCount}</TableCell>
+                      <TableCell className="text-gray-500 whitespace-nowrap">
+                        {formatDate(w.updatedAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </Card>
 

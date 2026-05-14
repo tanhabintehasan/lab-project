@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link, usePathname } from '@/i18n/routing';
+import { Link, usePathname, useRouter } from '@/i18n/routing';
 import {
   LayoutDashboard, ShoppingCart, Package, FileText, Wrench,
   FileQuestion, Microscope, ChevronLeft, ChevronRight,
-  Bell, Menu,
+  Bell, Menu, Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -15,12 +15,26 @@ interface LabPortalLayoutProps {
   children: React.ReactNode;
 }
 
+const ALLOWED_LAB_ROLES = ['LAB_MANAGER', 'TECHNICIAN', 'LAB_PARTNER'] as const;
+
+type LabRole = (typeof ALLOWED_LAB_ROLES)[number];
+
 export function LabPortalLayout({ children }: LabPortalLayoutProps) {
   const t = useTranslations('labPortal');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuthStore();
+
+  // Strict RBAC guard: only LAB_MANAGER, TECHNICIAN, or LAB_PARTNER may access /lab-portal
+  useEffect(() => {
+    if (!user) return;
+    const isAllowed = ALLOWED_LAB_ROLES.includes(user.role as LabRole);
+    if (!isAllowed) {
+      router.replace('/');
+    }
+  }, [user, router]);
 
   const menuItems = [
     { href: '/lab-portal/dashboard', icon: LayoutDashboard, label: t('dashboard') },
@@ -29,6 +43,7 @@ export function LabPortalLayout({ children }: LabPortalLayoutProps) {
     { href: '/lab-portal/samples', icon: Package, label: t('sampleManagement') },
     { href: '/lab-portal/reports', icon: FileText, label: t('reportUpload') },
     { href: '/lab-portal/equipment', icon: Wrench, label: t('equipmentManage') },
+    { href: '/lab-portal/earnings', icon: Wallet, label: t('myEarnings') },
   ];
 
   const renderSidebar = () => (

@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { page, pageSize, skip } = getPaginationParams(request);
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
+    const search = url.searchParams.get('q')?.trim() || '';
 
     const where: Prisma.OrderWhereInput = {};
 
@@ -21,7 +22,16 @@ export async function GET(request: NextRequest) {
     if (user.role === 'CUSTOMER' || user.role === 'ENTERPRISE_MEMBER') {
       where.userId = user.userId;
     } else if (user.role === 'LAB_PARTNER') {
-      where.assignedTo = user.userId;
+      const labUser = await prisma.labUser.findUnique({
+        where: { userId: user.userId },
+        select: { labId: true },
+      });
+      if (labUser) {
+        where.assignedLabId = labUser.labId;
+      } else {
+        // No lab assigned — return empty
+        where.assignedLabId = '';
+      }
     }
     // SUPER_ADMIN and FINANCE_ADMIN can see all
 
@@ -29,10 +39,20 @@ export async function GET(request: NextRequest) {
       where.status = status as OrderStatus;
     }
 
+    if (search) {
+      where.OR = [
+        { orderNo: { contains: search, mode: 'insensitive' } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
         include: {
+          user: { select: { id: true, name: true, email: true } },
+          lab: { select: { id: true, nameZh: true, slug: true } },
           items: { include: { service: { select: { nameZh: true, slug: true } } } },
           samples: { select: { id: true, sampleNo: true, status: true } },
           _count: { select: { reports: true } },

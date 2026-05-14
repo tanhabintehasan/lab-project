@@ -89,10 +89,32 @@ export const defaultOfficeCities = [
 ];
 
 export const defaultLabs = [
-  { id: 'default-lab-1', name: '先进电池研发实验室', location: '南京', specialties: '电池测试，性能分析', imageBg: 'bg-gradient-to-br from-blue-100 to-blue-50', image: '/uploads/settings/lab1.jpg' },
-  { id: 'default-lab-2', name: '能源材料表征实验室', location: '上海', specialties: '材料表征，化学分析', imageBg: 'bg-gradient-to-br from-emerald-100 to-emerald-50', image: '/uploads/settings/lab2.jpg' },
-  { id: 'default-lab-3', name: '清洁能源转化实验室', location: '镇江', specialties: '材料表征，化学分析', imageBg: 'bg-gradient-to-br from-amber-100 to-amber-50', image: '/uploads/settings/lab3.jpg' },
-  { id: 'default-lab-4', name: '智能检测装备实验室', location: '苏州', specialties: '无损检测，可靠性分析', imageBg: 'bg-gradient-to-br from-purple-100 to-purple-50', image: '/uploads/settings/lab4.png' },
+  { 
+    id: 'default-lab-1', 
+    name: '先进电池研发实验室', 
+    location: '南京', 
+    // FIXED: Points to lab1.jpg
+    image: '/uploads/settings/lab-1.jpg' 
+  },
+  { 
+    id: 'default-lab-2', 
+    name: '能源材料表征实验室', 
+    location: '上海', 
+    image: '/images/homepage/lab2.jpg' 
+  },
+  { 
+    id: 'default-lab-3', 
+    name: '清洁能源转化实验室', 
+    location: '镇江', 
+    image: '/images/homepage/lab3.jpg' 
+  },
+  { 
+    id: 'default-lab-4', 
+    name: '智能检测装备实验室', 
+    location: '苏州', 
+    // FIXED: Points to lab4.png
+    image: '/images/homepage/lab4.png' 
+  },
 ];
 
 export const defaultPartners = [

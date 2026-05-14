@@ -38,6 +38,9 @@ const handlePut = async (request: NextRequest, user: JWTPayload) => {
       quantity: data.quantity,
       hourlyRate: data.hourlyRate,
       dailyRate: data.dailyRate,
+      images: data.imageUrl !== undefined
+        ? (data.imageUrl ? { urls: [data.imageUrl] } : null)
+        : undefined,
     };
 
     if (data.labId) {

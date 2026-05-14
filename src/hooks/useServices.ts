@@ -57,6 +57,7 @@ interface SaveServicePayload {
   nameZh: string;
   shortDescZh?: string;
   categoryId: string;
+  labId?: string;
   priceMin?: number;
   turnaroundDays?: number;
   sampleCount?: string;
@@ -83,10 +84,21 @@ export function useServices(page: number, search: string) {
         pageSize: '15',
       });
       if (search) params.set('q', search);
-      const response = await apiClient.get<APIResponse<PaginatedServices>>(
-        `/api/admin/services?${params.toString()}`
-      );
-      return response.data as PaginatedServices;
+      const response = await apiClient.get<{
+        success: boolean;
+        data: ServiceItem[];
+        total: number;
+        page: number;
+        pageSize: number;
+        totalPages: number;
+      }>(`/api/admin/services?${params.toString()}`);
+      return {
+        data: response.data || [],
+        total: response.total || 0,
+        page: response.page || page,
+        pageSize: response.pageSize || 15,
+        totalPages: response.totalPages || 1,
+      } as PaginatedServices;
     },
   });
 }

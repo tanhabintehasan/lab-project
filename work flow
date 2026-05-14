@@ -1,0 +1,3078 @@
+# Laboratory Marketplace Admin System — Full Architecture & Management Plan
+
+## Project Overview
+
+You already completed:
+
+* Frontend marketplace UI
+* User authentication and user-side flows
+* Basic category creation
+* Service browsing structure
+
+Current problem:
+Most admin modules exist visually, but they are not connected to a complete backend CRUD architecture.
+
+This means:
+
+* UI exists
+* Database partially exists
+* APIs incomplete
+* State synchronization broken
+* File upload handling inconsistent
+* Dashboard metrics not centralized
+* Edit/Delete/Update flows missing
+* Relationships between modules are not normalized
+
+Your project should behave like:
+
+* Alibaba-style B2B marketplace
+* Laboratory service marketplace
+* Multi-vendor laboratory ecosystem
+* Admin-controlled CMS + ERP + Marketplace hybrid
+
+---
+
+# Deep Scan Summary of Your Current Stack
+
+## Current Tech Stack Detected
+
+### Frontend
+
+* Next.js 16 App Router
+* React 19
+* TailwindCSS
+* Zustand
+* React Query
+* next-intl multilingual system
+
+### Backend
+
+* Next.js API routes
+* Prisma ORM
+* PostgreSQL
+* JWT/Auth system
+
+### Existing Features Found
+
+* Categories
+* Services
+* Equipment
+* Labs
+* Reports
+* Orders
+* Wallet/Rewards
+* RFQ system
+* Upload system
+* CMS migration scripts
+* Settings system
+* Translation structure
+
+### Main Architectural Problem
+
+Your admin system is:
+
+❌ Page-based
+Instead of
+✅ Data-driven
+
+Currently many pages likely:
+
+* fetch static data
+* use mock state
+* not connected to reusable API service layer
+* lack centralized admin architecture
+
+---
+
+# What Your Marketplace Actually Needs
+
+Your platform should have 5 core systems:
+
+| System                   | Purpose                      |
+| ------------------------ | ---------------------------- |
+| Marketplace System       | Sell lab services            |
+| Laboratory ERP           | Manage lab operations        |
+| CMS System               | Manage website content       |
+| Financial System         | Payments/orders/commissions  |
+| AI Recommendation System | Smart service recommendation |
+
+---
+
+# Recommended Final Architecture
+
+```text
+Frontend (Next.js)
+        |
+        V
+Admin Dashboard Layer
+        |
+        V
+Admin API Gateway
+        |
+------------------------------------------------
+| Service Module | Order Module | CMS Module |
+------------------------------------------------
+| Lab Module     | Finance       | Analytics  |
+------------------------------------------------
+        |
+        V
+Prisma ORM
+        |
+        V
+PostgreSQL Database
+        |
+        V
+Object Storage (Images/Reports)
+```
+
+---
+
+# MOST IMPORTANT FIX
+
+You must convert every admin section into:
+
+## Complete CRUD Architecture
+
+Every module MUST support:
+
+| Feature       | Required |
+| ------------- | -------- |
+| Create        | ✅        |
+| Read          | ✅        |
+| Update        | ✅        |
+| Delete        | ✅        |
+| Search        | ✅        |
+| Pagination    | ✅        |
+| Filtering     | ✅        |
+| Status change | ✅        |
+| Image upload  | ✅        |
+| Audit log     | ✅        |
+| Soft delete   | ✅        |
+
+Without this, admin panel will always feel broken.
+
+---
+
+# MASTER ADMIN FLOW
+
+```mermaid
+flowchart TD
+    A[Admin Login] --> B[Dashboard]
+
+    B --> C[Service Management]
+    B --> D[Category Management]
+    B --> E[Order Management]
+    B --> F[Laboratory Management]
+    B --> G[User Management]
+    B --> H[CMS Management]
+    B --> I[Finance Management]
+    B --> J[Analytics]
+
+    C --> C1[Add Service]
+    C --> C2[Edit Service]
+    C --> C3[Delete Service]
+
+    E --> E1[Track Orders]
+    E --> E2[Assign Lab]
+    E --> E3[Generate Report]
+
+    F --> F1[Manage Equipment]
+    F --> F2[Manage Samples]
+
+    I --> I1[Transactions]
+    I --> I2[Commissions]
+    I --> I3[Refunds]
+```
+
+---
+
+# PROPER DATABASE DESIGN
+
+## You Need These Core Tables
+
+```text
+users
+roles
+permissions
+laboratories
+laboratory_staff
+services
+service_categories
+orders
+order_items
+samples
+reports
+equipment
+appointments
+transactions
+wallets
+recommendations
+cms_pages
+cms_banners
+translations
+settings
+notifications
+reviews
+audit_logs
+support_tickets
+```
+
+---
+
+# COMPLETE MODULE-BY-MODULE PLAN
+
+# 1. Dashboard Management
+
+## Purpose
+
+Central monitoring system.
+
+## Dashboard Must Show
+
+### Metrics
+
+* Total Orders
+* Pending Orders
+* Revenue
+* Active Labs
+* Active Users
+* Pending Reports
+* Monthly Sales
+* Top Services
+* Failed Transactions
+
+### Charts
+
+* Revenue graph
+* Order graph
+* User growth
+* Lab performance
+
+## Backend APIs
+
+```text
+GET /api/admin/dashboard/stats
+GET /api/admin/dashboard/revenue
+GET /api/admin/dashboard/orders
+GET /api/admin/dashboard/labs
+```
+
+---
+
+# 2. Service Management
+
+## Service Entity
+
+A service should contain:
+
+```text
+id
+name
+slug
+categoryId
+labId
+description
+price
+discountPrice
+currency
+sampleType
+turnaroundTime
+images
+requirements
+seoTitle
+seoDescription
+status
+featured
+createdAt
+updatedAt
+```
+
+## Admin Features
+
+### Required Pages
+
+* Service List
+* Add Service
+* Edit Service
+* Service Details
+* Service Analytics
+
+## Service Flow
+
+```mermaid
+flowchart LR
+A[Admin Creates Service]
+--> B[Upload Images]
+--> C[Assign Category]
+--> D[Assign Laboratory]
+--> E[Set Pricing]
+--> F[Publish Service]
+```
+
+## APIs
+
+```text
+GET /api/admin/services
+POST /api/admin/services
+PUT /api/admin/services/:id
+DELETE /api/admin/services/:id
+```
+
+---
+
+# 3. Category Management
+
+## Categories Need
+
+```text
+name
+slug
+icon
+banner
+parentCategory
+seoMeta
+status
+sortOrder
+```
+
+## Important
+
+You already partially completed this.
+Now add:
+
+* edit category
+* delete category
+* nested categories
+* category image upload
+* category sorting
+
+---
+
+# 4. Demand Management (RFQ System)
+
+This is one of the MOST important features for China B2B market.
+
+## Workflow
+
+```mermaid
+flowchart TD
+A[Client Posts Requirement]
+--> B[Admin Reviews]
+--> C[Labs Receive RFQ]
+--> D[Labs Submit Quotation]
+--> E[Client Accepts]
+--> F[Order Generated]
+```
+
+## Features
+
+* quotation management
+* requirement attachments
+* negotiation
+* chat system
+* AI matching
+
+---
+
+# 5. Order Management
+
+## Order Lifecycle
+
+```mermaid
+flowchart LR
+A[Order Created]
+--> B[Payment Success]
+--> C[Sample Collection]
+--> D[Lab Processing]
+--> E[Report Generation]
+--> F[Delivery]
+--> G[Completed]
+```
+
+## Required Features
+
+### Admin Can
+
+* change order status
+* assign laboratory
+* track progress
+* upload reports
+* refund orders
+* create invoices
+
+## Important Status System
+
+```text
+PENDING
+PAID
+SAMPLE_RECEIVED
+IN_PROGRESS
+REPORT_READY
+COMPLETED
+CANCELLED
+REFUNDED
+```
+
+---
+
+# 6. Sample Management
+
+## Needed for Real Laboratory Workflow
+
+### Sample Data
+
+```text
+sampleId
+orderId
+barcode
+sampleType
+collectionDate
+storageCondition
+trackingStatus
+assignedLab
+```
+
+## IMPORTANT
+
+Generate:
+
+* QR code
+* barcode
+* tracking history
+
+This is critical for professional laboratory systems.
+
+---
+
+# 7. Report Management
+
+## Required Features
+
+* upload PDF reports
+* digital signatures
+* verification QR
+* report history
+* report sharing
+* report templates
+
+## Report Flow
+
+```mermaid
+flowchart TD
+A[Lab Uploads Report]
+--> B[Admin Verification]
+--> C[Digital Signature]
+--> D[Client Access]
+```
+
+---
+
+# 8. User Management
+
+## User Roles
+
+```text
+SUPER_ADMIN
+ADMIN
+LAB_MANAGER
+LAB_TECHNICIAN
+CUSTOMER
+ENTERPRISE_CLIENT
+SALES_MANAGER
+FINANCE_MANAGER
+```
+
+## Features
+
+* role assignment
+* permission management
+* KYC verification
+* user suspension
+* wallet management
+
+---
+
+# 9. Laboratory Management
+
+## Labs Are Marketplace Vendors
+
+### Lab Data
+
+```text
+labName
+license
+certifications
+location
+services
+equipment
+staff
+ratings
+revenue
+verificationStatus
+```
+
+## Features
+
+* approve labs
+* reject labs
+* assign services
+* track lab performance
+* compliance monitoring
+
+---
+
+# 10. Equipment Management
+
+## Important for Metrology/Lab Industry
+
+### Equipment Data
+
+```text
+equipmentName
+serialNumber
+calibrationDate
+maintenanceDate
+status
+assignedLab
+```
+
+## Features
+
+* maintenance alerts
+* calibration tracking
+* equipment booking
+* equipment lifecycle
+
+---
+
+# 11. Appointment Management
+
+## Workflow
+
+```mermaid
+flowchart LR
+A[Client Books]
+--> B[Schedule]
+--> C[Lab Confirmation]
+--> D[Technician Assignment]
+--> E[Visit Completed]
+```
+
+---
+
+# 12. Financial Management
+
+## Required Features
+
+### Accounting
+
+* platform commission
+* lab payout
+* tax system
+* invoice generation
+* refund system
+* subscription plans
+
+## China Market Consideration
+
+You may later need:
+
+* Alipay
+* WeChat Pay
+* UnionPay
+* RMB multi-currency support
+
+---
+
+# 13. Transaction Management
+
+## Needed Tables
+
+```text
+transactions
+refunds
+payouts
+wallet_logs
+commission_logs
+```
+
+## Features
+
+* transaction history
+* dispute management
+* payout approval
+* withdrawal system
+
+---
+
+# 14. Recommendation Management (VERY IMPORTANT)
+
+## AI Recommendation System
+
+### AI Can Recommend
+
+* best lab
+* fastest service
+* nearby lab
+* related services
+* bundle services
+
+## Future AI Features
+
+* AI chatbot
+* AI quotation
+* AI report analysis
+* AI translation
+
+---
+
+# 15. Content Management System (CMS)
+
+## Needed Sections
+
+```text
+home banners
+hero section
+blogs
+faq
+about page
+terms
+privacy
+landing pages
+SEO pages
+```
+
+## Your CMS Should Support
+
+* rich text editor
+* drag/drop sections
+* image upload
+* multilingual content
+* SEO metadata
+
+---
+
+# 16. Website Settings
+
+## Required Settings
+
+```text
+site name
+logo
+favicon
+social links
+SMTP
+payment keys
+currency
+languages
+tax settings
+maintenance mode
+SEO defaults
+```
+
+---
+
+# 17. Translation Management
+
+You already use next-intl.
+
+Now create:
+
+## Translation Admin Panel
+
+### Features
+
+* edit translations from admin
+* export JSON
+* import JSON
+* auto AI translation
+* language switch
+
+Supported:
+
+* Chinese
+* English
+* Bengali
+
+---
+
+# IMAGE & FILE MANAGEMENT SYSTEM
+
+This is where many admin systems break.
+
+# Proper Upload Architecture
+
+```mermaid
+flowchart TD
+A[Admin Selects Image]
+--> B[Frontend Validation]
+--> C[Upload API]
+--> D[Storage]
+--> E[Database URL Save]
+--> F[Preview Render]
+```
+
+---
+
+# Recommended Storage
+
+## Development
+
+Use:
+
+```text
+/public/uploads
+```
+
+## Production
+
+Use:
+
+* AWS S3
+* Cloudflare R2
+* Alibaba OSS (Best for China)
+
+Since your market is China:
+
+BEST OPTION:
+
+* Alibaba Cloud OSS
+
+---
+
+# UNIVERSAL ADMIN TABLE SYSTEM
+
+Create ONE reusable admin table component.
+
+## Every Module Should Use
+
+```text
+AdminTable
+AdminForm
+AdminModal
+AdminUpload
+AdminFilters
+AdminPagination
+AdminStatusBadge
+```
+
+This will reduce 70% duplicated code.
+
+---
+
+# BEST FOLDER STRUCTURE
+
+```text
+src/
+ ├── app/
+ ├── components/
+ │    ├── admin/
+ │    ├── dashboard/
+ │    ├── forms/
+ │    ├── tables/
+ │    └── upload/
+ │
+ ├── services/
+ │    ├── api/
+ │    ├── auth/
+ │    └── uploads/
+ │
+ ├── lib/
+ ├── hooks/
+ ├── store/
+ └── types/
+```
+
+---
+
+# HOW TO FIX YOUR CURRENT BROKEN ADMIN PANEL
+
+# STEP-BY-STEP PLAN
+
+## PHASE 1 — Database Stabilization
+
+### First Do This
+
+1. Audit all Prisma models
+2. Remove duplicate tables
+3. Add missing relationships
+4. Add enum status systems
+5. Add timestamps everywhere
+6. Add soft delete fields
+
+### Important
+
+Every table should contain:
+
+```text
+createdAt
+updatedAt
+deletedAt
+status
+```
+
+---
+
+# PHASE 2 — API REBUILD
+
+This is probably where your biggest issue exists.
+
+## Create Standard CRUD APIs
+
+Every module should follow:
+
+```text
+GET    /api/admin/module
+GET    /api/admin/module/:id
+POST   /api/admin/module
+PUT    /api/admin/module/:id
+DELETE /api/admin/module/:id
+```
+
+---
+
+# PHASE 3 — ADMIN STATE MANAGEMENT
+
+Use:
+
+* React Query
+* Zustand
+
+## React Query For
+
+* fetching
+* caching
+* refetching
+
+## Zustand For
+
+* auth state
+* UI state
+* filters
+* temporary form data
+
+---
+
+# PHASE 4 — UNIVERSAL FORM SYSTEM
+
+Create reusable:
+
+```text
+DynamicForm.tsx
+ImageUploader.tsx
+RichEditor.tsx
+FormModal.tsx
+```
+
+Then every module becomes easy.
+
+---
+
+# PHASE 5 — FILE UPLOAD SYSTEM
+
+## Your Upload System Must Support
+
+* images
+* PDFs
+* reports
+* certificates
+* lab licenses
+* multiple upload
+* drag/drop
+* compression
+
+---
+
+# PHASE 6 — PERMISSION SYSTEM
+
+VERY IMPORTANT.
+
+## Implement RBAC
+
+```mermaid
+flowchart TD
+A[Super Admin]
+--> B[Admin]
+--> C[Lab Manager]
+--> D[Technician]
+--> E[Customer]
+```
+
+---
+
+# WHAT YOU ARE CURRENTLY MISSING
+
+# CRITICAL FEATURES
+
+## 1. Audit Logs
+
+Track:
+
+* who edited what
+* when changes happened
+* old value/new value
+
+---
+
+## 2. Notification System
+
+### Needed Notifications
+
+* order updates
+* report ready
+* payment success
+* appointment reminder
+* lab approval
+
+---
+
+## 3. Search Engine
+
+Need global search:
+
+* users
+* labs
+* services
+* reports
+* orders
+
+---
+
+## 4. Advanced Analytics
+
+Need:
+
+* top labs
+* failed orders
+* conversion rate
+* revenue trends
+* AI insights
+
+---
+
+## 5. SEO System
+
+China market requires strong SEO.
+
+Need:
+
+* dynamic meta
+* sitemap
+* schema markup
+* multilingual SEO
+
+---
+
+## 6. Real-Time Updates
+
+Use:
+
+* WebSockets
+* Pusher
+* Socket.IO
+
+For:
+
+* live order tracking
+* notifications
+* admin updates
+
+---
+
+# RECOMMENDED FINAL TECH STACK
+
+## Frontend
+
+* Next.js
+* React Query
+* Zustand
+* Tailwind
+* shadcn/ui
+
+## Backend
+
+* Next.js API
+* Prisma
+* PostgreSQL
+
+## Storage
+
+* Alibaba OSS
+
+## Queue
+
+* BullMQ + Redis
+
+## Realtime
+
+* Socket.IO
+
+## Search
+
+* Meilisearch
+
+## Analytics
+
+* Metabase or Apache Superset
+
+---
+
+# BEST DEVELOPMENT ORDER
+
+# DO NOT BUILD RANDOMLY
+
+## Correct Order
+
+### Stage 1
+
+✅ Database cleanup
+
+### Stage 2
+
+✅ Auth + RBAC
+
+### Stage 3
+
+✅ Universal CRUD system
+
+### Stage 4
+
+✅ Services + Categories
+
+### Stage 5
+
+✅ Orders + Payments
+
+### Stage 6
+
+✅ Laboratories + Equipment
+
+### Stage 7
+
+✅ Reports + Samples
+
+### Stage 8
+
+✅ CMS + Translation
+
+### Stage 9
+
+✅ Analytics + AI
+
+### Stage 10
+
+✅ Optimization + China deployment
+
+---
+
+# IMPORTANT CHINA MARKET REQUIREMENTS
+
+## You Should Add
+
+### China Localization
+
+* Simplified Chinese
+* RMB pricing
+* WeChat login
+* Alipay
+* WeChat Pay
+
+### China Infrastructure
+
+Avoid blocked services.
+
+Prefer:
+
+* Alibaba Cloud
+* Tencent Cloud
+* OSS storage
+
+---
+
+# FINAL RECOMMENDATION
+
+Your project is already large.
+
+The main issue is NOT frontend.
+
+The main issue is:
+
+❌ lack of backend architecture standardization
+❌ lack of reusable CRUD system
+❌ weak admin data architecture
+❌ inconsistent APIs
+❌ missing relational workflows
+
+---
+
+# MOST IMPORTANT THING TO DO NEXT
+
+## FIRST TASK
+
+Build a reusable:
+
+```text
+Admin CRUD Framework
+```
+
+Once that exists:
+
+* every module becomes easy
+* admin panel becomes editable
+* maintenance becomes easier
+* scaling becomes possible
+
+---
+
+# IDEAL NEXT 14 DAYS PLAN
+
+## Week 1
+
+### Backend
+
+* normalize database
+* rebuild APIs
+* create upload system
+* build RBAC
+
+### Frontend
+
+* reusable table
+* reusable form
+* reusable modal
+* reusable uploader
+
+---
+
+## Week 2
+
+### Complete Modules
+
+* services
+* orders
+* labs
+* reports
+* CMS
+* settings
+
+---
+
+# SAFE DEVELOPMENT STRATEGY FOR KIMI AI DEVELOPMENT
+
+You are not building a small website anymore.
+
+You are building:
+
+```text
+Enterprise Laboratory Marketplace Platform
+```
+
+So the MOST important thing is:
+
+# NEVER BREAK EXISTING FEATURES
+
+Since Kimi will develop features one by one, you must enforce:
+
+## MODULAR DEVELOPMENT ARCHITECTURE
+
+Every feature must be:
+
+* isolated
+* independently testable
+* API scoped
+* database migration safe
+* reusable
+* rollback safe
+* backward compatible
+
+---
+
+# GOLDEN RULES FOR KIMI DEVELOPMENT
+
+## RULE 1 — NEVER MODIFY WORKING LOGIC DIRECTLY
+
+Instead:
+
+```text
+Create new module
+Test module
+Connect module
+Replace old logic safely
+```
+
+Never rewrite large working files directly.
+
+---
+
+## RULE 2 — FEATURE BRANCH SYSTEM
+
+Each feature must be developed separately.
+
+Example:
+
+```text
+feature/admin-services
+feature/order-management
+feature/report-system
+feature/lab-management
+```
+
+---
+
+## RULE 3 — EVERY FEATURE NEEDS
+
+Before coding, Kimi must define:
+
+```text
+1. Database changes
+2. API structure
+3. Validation rules
+4. UI components
+5. Upload handling
+6. Error handling
+7. Permission rules
+8. Test cases
+9. Rollback safety
+10. Migration safety
+```
+
+---
+
+# BEST PROJECT DIVISION STRATEGY
+
+# DIVIDE PROJECT INTO 8 MAJOR SECTORS
+
+This is VERY IMPORTANT.
+
+Never develop everything together.
+
+---
+
+# SECTOR 1 — CORE SYSTEM
+
+## Purpose
+
+Foundation layer.
+
+## Features
+
+```text
+Authentication
+RBAC permissions
+Admin layout
+API architecture
+Upload system
+Database architecture
+Settings system
+Notification system
+Audit logs
+```
+
+## MUST BUILD FIRST
+
+Without this, all future modules will become unstable.
+
+---
+
+# KIMI PROMPT — CORE SYSTEM
+
+You are a senior enterprise MERN architect.
+
+Analyze the existing Next.js + Prisma laboratory marketplace project.
+
+TASK:
+Build a stable enterprise-grade core architecture WITHOUT breaking existing frontend functionality.
+
+Requirements:
+
+1. Build reusable admin architecture.
+2. Create centralized API response system.
+3. Create reusable CRUD utilities.
+4. Add RBAC permission system.
+5. Add audit log system.
+6. Add upload management system.
+7. Add reusable admin table and form components.
+8. Add safe Prisma migration structure.
+9. Add global error handling.
+10. Add transaction-safe database operations.
+
+IMPORTANT RULES:
+
+* Do not modify existing working frontend logic.
+* Create new reusable architecture.
+* Maintain backward compatibility.
+* All code must be modular.
+* Every feature must be independently testable.
+* Add TypeScript types everywhere.
+* Use React Query and Zustand properly.
+* Use scalable folder architecture.
+
+Deliver:
+
+* folder structure
+* database changes
+* API architecture
+* reusable admin framework
+* migration plan
+* testing plan
+* rollback safety plan
+* production-ready code structure
+
+---
+
+# SECTOR 2 — SERVICE MARKETPLACE SYSTEM
+
+## Features
+
+```text
+Service management
+Category management
+Pricing
+Multi-image upload
+SEO metadata
+Featured services
+Related services
+Service analytics
+```
+
+---
+
+# DEVELOPMENT ORDER
+
+```text
+Categories
+→ Services
+→ Search
+→ Filters
+→ Recommendations
+```
+
+---
+
+# KIMI PROMPT — SERVICE MANAGEMENT
+
+You are a senior MERN + Prisma marketplace architect.
+
+TASK:
+Build a complete enterprise-grade service management system for a laboratory marketplace.
+
+Requirements:
+
+1. Full CRUD service management.
+2. Multi-image upload.
+3. Service categories.
+4. Rich text description.
+5. SEO metadata.
+6. Service status system.
+7. Featured service support.
+8. Service search and filtering.
+9. Pagination.
+10. Reusable admin forms.
+
+Database Requirements:
+
+* services table
+* service_images table
+* categories relationship
+* SEO fields
+* soft delete support
+
+API Requirements:
+GET /api/admin/services
+POST /api/admin/services
+PUT /api/admin/services/:id
+DELETE /api/admin/services/:id
+
+Frontend Requirements:
+
+* admin table
+* add/edit modal
+* upload component
+* search filters
+* status badges
+* optimistic updates
+
+IMPORTANT:
+
+* Existing frontend UI must not break.
+* All code must be modular.
+* Create reusable architecture.
+* Add validation everywhere.
+* Add safe image upload handling.
+* Add TypeScript types.
+
+---
+
+# SECTOR 3 — LABORATORY VENDOR SYSTEM
+
+## Features
+
+```text
+Laboratory onboarding
+Lab verification
+Equipment management
+Staff management
+Performance metrics
+Lab profile system
+Certificates
+```
+
+---
+
+# IMPORTANT
+
+This transforms your project into:
+
+```text
+Multi-vendor marketplace
+```
+
+instead of:
+
+```text
+single service website
+```
+
+---
+
+# KIMI PROMPT — LAB MANAGEMENT
+
+You are a senior SaaS marketplace architect.
+
+TASK:
+Build a multi-vendor laboratory management system.
+
+Requirements:
+
+1. Laboratory registration.
+2. Lab verification workflow.
+3. Equipment management.
+4. Staff management.
+5. Certification upload.
+6. Laboratory dashboard.
+7. Performance metrics.
+8. Service assignment.
+9. Vendor commission tracking.
+10. Approval/rejection workflow.
+
+Database Tables:
+
+* laboratories
+* laboratory_staff
+* equipment
+* certifications
+* lab_reviews
+
+Frontend:
+
+* lab admin dashboard
+* equipment CRUD
+* certificate upload
+* analytics widgets
+
+IMPORTANT:
+
+* Build vendor-isolated architecture.
+* One lab must not access another lab's data.
+* Add permission middleware.
+* Add scalable relational structure.
+* Use reusable admin components.
+
+---
+
+# SECTOR 4 — ORDER + SAMPLE + REPORT ECOSYSTEM
+
+This is the HEART of your platform.
+
+---
+
+# WORKFLOW
+
+```text
+Order
+→ Sample Collection
+→ Lab Processing
+→ Report Upload
+→ Verification
+→ Delivery
+```
+
+---
+
+# FEATURES
+
+```text
+Order tracking
+Sample tracking
+Barcode generation
+QR verification
+PDF reports
+Status timelines
+Notifications
+```
+
+---
+
+# KIMI PROMPT — ORDER SYSTEM
+
+You are a senior enterprise laboratory workflow architect.
+
+TASK:
+Build a complete laboratory order lifecycle system.
+
+Requirements:
+
+1. Order management.
+2. Order status lifecycle.
+3. Sample tracking.
+4. Barcode system.
+5. QR verification.
+6. Report uploads.
+7. Timeline tracking.
+8. Notification system.
+9. Refund handling.
+10. Invoice generation.
+
+Database:
+
+* orders
+* order_items
+* samples
+* reports
+* report_verifications
+
+Order Statuses:
+PENDING
+PAID
+SAMPLE_RECEIVED
+IN_PROGRESS
+REPORT_READY
+COMPLETED
+CANCELLED
+REFUNDED
+
+Frontend:
+
+* order dashboard
+* tracking timeline
+* sample table
+* report upload modal
+* PDF preview
+
+IMPORTANT:
+
+* Existing order flow must remain functional.
+* Build scalable status architecture.
+* Add audit logs.
+* Add secure file upload.
+* Add rollback-safe database transactions.
+
+---
+
+# SECTOR 5 — FINANCIAL SYSTEM
+
+## Features
+
+```text
+Transactions
+Wallets
+Commissions
+Vendor payouts
+Refunds
+Invoices
+Subscriptions
+```
+
+---
+
+# KIMI PROMPT — FINANCE SYSTEM
+
+You are a senior fintech SaaS architect.
+
+TASK:
+Build a financial management system for a laboratory marketplace.
+
+Requirements:
+
+1. Transaction management.
+2. Vendor commission calculation.
+3. Wallet system.
+4. Refund system.
+5. Payout requests.
+6. Invoice generation.
+7. Financial analytics.
+8. Multi-currency support.
+9. Audit logs.
+10. Secure transaction architecture.
+
+Database:
+
+* transactions
+* payouts
+* wallets
+* commissions
+* invoices
+* refunds
+
+Frontend:
+
+* finance dashboard
+* transaction table
+* payout approval panel
+* refund workflow
+
+IMPORTANT:
+
+* Use transaction-safe Prisma operations.
+* Never allow financial inconsistency.
+* Add financial logs.
+* Add role-based access.
+
+---
+
+# SECTOR 6 — CMS + WEBSITE MANAGEMENT
+
+## Features
+
+```text
+Homepage editing
+Banner management
+Blogs
+FAQ
+Landing pages
+SEO
+Dynamic sections
+```
+
+---
+
+# KIMI PROMPT — CMS SYSTEM
+
+You are a senior headless CMS architect.
+
+TASK:
+Build a dynamic CMS system for the laboratory marketplace.
+
+Requirements:
+
+1. Homepage section management.
+2. Dynamic banners.
+3. Blog management.
+4. FAQ management.
+5. SEO metadata.
+6. Rich text editor.
+7. Image uploads.
+8. Dynamic landing pages.
+9. Translation support.
+10. Reusable CMS blocks.
+
+Database:
+
+* cms_pages
+* cms_sections
+* banners
+* blogs
+* seo_meta
+
+Frontend:
+
+* drag/drop CMS editor
+* reusable content blocks
+* preview mode
+* image manager
+
+IMPORTANT:
+
+* Existing frontend design must remain intact.
+* Build editable backend architecture.
+* Add multilingual support.
+
+---
+
+# SECTOR 7 — TRANSLATION + LOCALIZATION SYSTEM
+
+## Features
+
+```text
+Chinese translation
+English translation
+Dynamic translations
+Admin translation editor
+Currency localization
+```
+
+---
+
+# KIMI PROMPT — TRANSLATION SYSTEM
+
+You are a senior internationalization architect.
+
+TASK:
+Build a scalable multilingual system for a China-focused marketplace.
+
+Requirements:
+
+1. Dynamic translation management.
+2. Admin translation editor.
+3. next-intl integration.
+4. JSON translation syncing.
+5. Language switcher.
+6. SEO localization.
+7. RMB currency formatting.
+8. Chinese locale optimization.
+
+Supported Languages:
+
+* Simplified Chinese
+* English
+* Bengali
+
+IMPORTANT:
+
+* Existing next-intl structure must not break.
+* Add scalable translation architecture.
+* Make all CMS content translatable.
+
+---
+
+# SECTOR 8 — AI + ANALYTICS SYSTEM
+
+## Features
+
+```text
+Recommendation engine
+Lab recommendation
+AI quotation
+Analytics dashboard
+Revenue analytics
+Predictive insights
+```
+
+---
+
+# KIMI PROMPT — AI + ANALYTICS
+
+You are a senior AI marketplace systems architect.
+
+TASK:
+Build AI recommendation and analytics systems for a laboratory marketplace.
+
+Requirements:
+
+1. Service recommendations.
+2. Laboratory recommendations.
+3. Related services.
+4. Revenue analytics.
+5. User behavior analytics.
+6. Dashboard widgets.
+7. Predictive insights.
+8. Search optimization.
+
+Frontend:
+
+* analytics dashboard
+* charts
+* KPI cards
+* recommendation panels
+
+IMPORTANT:
+
+* Build scalable architecture.
+* Keep recommendation engine modular.
+* Ensure analytics queries are optimized.
+
+---
+
+# ENTERPRISE DEVELOPMENT RULES
+
+# NEVER DO THESE
+
+❌ Never directly modify working database tables randomly.
+❌ Never build large components in one file.
+❌ Never tightly couple frontend and backend.
+❌ Never store uploads locally in production.
+❌ Never skip validation.
+❌ Never build feature logic inside page files.
+
+---
+
+# ALWAYS DO THESE
+
+✅ Use service layer architecture.
+✅ Use reusable components.
+✅ Use TypeScript types.
+✅ Use modular APIs.
+✅ Use Prisma transactions.
+✅ Use audit logs.
+✅ Use soft deletes.
+✅ Use permission middleware.
+
+---
+
+# BEST WORKFLOW WITH KIMI
+
+## FOR EVERY FEATURE
+
+Follow this exact process:
+
+```text
+1. Analyze existing code
+2. Identify dependencies
+3. Create architecture plan
+4. Create database migration
+5. Build backend APIs
+6. Test APIs independently
+7. Build reusable frontend components
+8. Connect frontend carefully
+9. Add validation
+10. Add role permissions
+11. Add testing
+12. Deploy safely
+```
+
+---
+
+# BEST DEPLOYMENT STRATEGY
+
+## Development
+
+```text
+Local Development
+→ Staging Environment
+→ Production
+```
+
+Never deploy directly.
+
+---
+
+# BEST INFRASTRUCTURE FOR CHINA
+
+## Recommended
+
+```text
+Frontend:
+Vercel (temporary)
+Later Alibaba Cloud
+
+Database:
+PostgreSQL
+
+Storage:
+Alibaba OSS
+
+Redis:
+Upstash or self-hosted Redis
+
+Realtime:
+Socket.IO
+```
+
+---
+
+# PRODUCTION-SAFE MICRO PROMPTS FOR KIMI (ONE FEATURE AT A TIME)
+
+IMPORTANT:
+These prompts are intentionally SMALL and ISOLATED.
+
+Reason:
+
+* Kimi should only work on ONE feature at a time.
+* Prevent breaking existing systems.
+* Prevent token waste.
+* Prevent unnecessary full-project scans.
+* Prevent accidental architecture rewrites.
+
+IMPORTANT RULES YOU MUST KEEP IN EVERY PROMPT:
+
+```text
+- Do NOT refactor unrelated files.
+- Do NOT scan entire project.
+- Only analyze files directly related to this feature.
+- Do NOT change existing UI design.
+- Do NOT modify working authentication.
+- Do NOT rename existing APIs unless necessary.
+- Keep backward compatibility.
+- Build modular reusable code.
+- Use existing Prisma schema_new and data_new structure.
+- Do not remove existing database fields.
+- Add comments for every new logic.
+```
+
+---
+
+# STEP 1 — ADMIN API RESPONSE STANDARDIZATION
+
+You are working on an existing Next.js + Prisma laboratory marketplace project.
+
+IMPORTANT:
+
+* Do NOT scan the entire project.
+* Only inspect existing admin API utilities and API route structure.
+* Use existing schema_new and data_new database structure.
+* Do NOT modify unrelated business logic.
+
+TASK:
+Create a centralized reusable admin API response system.
+
+Requirements:
+
+1. Create reusable API response helpers:
+
+* success response
+* error response
+* pagination response
+* validation response
+
+2. Create reusable error handler.
+3. Create reusable async wrapper.
+4. Keep all existing APIs working.
+5. Add TypeScript types.
+6. Add proper HTTP status handling.
+7. Add reusable validation helper.
+8. Add reusable Prisma transaction helper.
+9. Create reusable API utility folder structure.
+10. Example integration in ONE admin route only.
+
+DO NOT:
+
+* refactor whole backend
+* change database schema
+* rewrite auth system
+* modify frontend pages
+
+---
+
+# STEP 2 — REUSABLE ADMIN TABLE
+
+Build a reusable AdminTable component only.
+
+Requirements:
+
+* pagination
+* search
+* sorting
+* filters
+* status badge
+* action buttons
+* loading state
+* empty state
+* bulk select
+* responsive design
+
+IMPORTANT:
+
+* Do NOT redesign UI.
+* Integrate ONLY into one admin page.
+* Use TypeScript.
+* Use existing design system.
+* Do NOT modify unrelated pages.
+
+---
+
+# STEP 3 — IMAGE UPLOAD SYSTEM
+
+Build reusable upload system only.
+
+Requirements:
+
+* image upload
+* PDF upload
+* multiple upload
+* drag/drop
+* upload progress
+* preview
+* file validation
+* reusable upload component
+* reusable upload API
+
+IMPORTANT:
+
+* Keep existing uploads functional.
+* Do NOT redesign forms.
+* Keep Alibaba OSS compatible.
+
+---
+
+# STEP 4 — CATEGORY MANAGEMENT FIX
+
+Existing add-category already works.
+
+TASK:
+Only extend category management.
+
+Add:
+
+* edit category
+* delete category
+* status toggle
+* category image
+* nested categories
+* sorting
+* search
+* pagination
+* SEO fields
+
+IMPORTANT:
+
+* Do NOT rewrite working add-category flow.
+* Keep current category data safe.
+* Use soft delete.
+
+---
+
+# STEP 5 — SERVICE MANAGEMENT
+
+Build complete service management only.
+
+Features:
+
+* create service
+* edit service
+* delete service
+* image gallery
+* pricing
+* category assignment
+* lab assignment
+* featured services
+* status system
+* search/filter
+* pagination
+* SEO metadata
+
+IMPORTANT:
+
+* Keep existing frontend service pages functional.
+* Do NOT redesign UI.
+* Build modular APIs.
+
+---
+
+# STEP 6 — LABORATORY MANAGEMENT
+
+Build laboratory vendor management only.
+
+Features:
+
+* laboratory CRUD
+* approval system
+* profile editing
+* certification upload
+* service assignment
+* status management
+* search/filter
+* pagination
+
+IMPORTANT:
+
+* Multi-vendor safe architecture.
+* One lab cannot access another lab's data.
+* Do NOT modify customer frontend.
+
+---
+
+# STEP 7 — EQUIPMENT MANAGEMENT
+
+Build equipment management only.
+
+Features:
+
+* equipment CRUD
+* equipment image upload
+* calibration date
+* maintenance date
+* equipment status
+* laboratory relation
+* search/filter
+
+IMPORTANT:
+
+* Equipment belongs to laboratories.
+* Keep modular architecture.
+
+---
+
+# STEP 8 — ORDER MANAGEMENT
+
+Build order management only.
+
+Features:
+
+* order list
+* order details
+* status tracking
+* order timeline
+* lab assignment
+* refund status
+* invoice support
+* search/filter
+
+Statuses:
+PENDING
+PAID
+SAMPLE_RECEIVED
+IN_PROGRESS
+REPORT_READY
+COMPLETED
+CANCELLED
+
+IMPORTANT:
+
+* Extend existing order flow safely.
+* Do NOT rewrite payment logic.
+
+---
+
+# STEP 9 — SAMPLE MANAGEMENT
+
+Build sample tracking system only.
+
+Features:
+
+* sample creation
+* sample tracking
+* sample status
+* barcode generation
+* QR generation
+* storage condition
+* lab assignment
+* tracking history
+
+IMPORTANT:
+
+* Samples are linked with orders.
+* Do NOT redesign orders system.
+
+---
+
+# STEP 10 — REPORT MANAGEMENT
+
+Build report management only.
+
+Features:
+
+* PDF upload
+* report verification hash
+* QR verification
+* report preview
+* report download
+* report history
+* report status
+
+IMPORTANT:
+
+* Reports belong to samples and orders.
+* Keep upload system compatible.
+
+---
+
+# STEP 11 — USER MANAGEMENT
+
+Build user management only.
+
+Features:
+
+* user list
+* user details
+* role assignment
+* account suspension
+* verification status
+* search/filter
+* pagination
+
+IMPORTANT:
+
+* Do NOT rewrite authentication.
+* Keep login system intact.
+
+---
+
+# STEP 12 — CMS MANAGEMENT
+
+Build editable CMS system only.
+
+Features:
+
+* homepage banners
+* hero editing
+* FAQ management
+* blog management
+* SEO fields
+* image management
+
+IMPORTANT:
+
+* Do NOT redesign homepage.
+* Only make content editable.
+
+---
+
+# STEP 13 — TRANSACTION MANAGEMENT
+
+Build transaction management only.
+
+Features:
+
+* transaction list
+* payout tracking
+* refund tracking
+* commission tracking
+* invoice records
+* search/filter
+
+IMPORTANT:
+
+* Financial consistency is critical.
+* Do NOT rewrite payment gateway.
+
+---
+
+# STEP 14 — DASHBOARD ANALYTICS
+
+Build dashboard analytics only.
+
+Features:
+
+* KPI cards
+* revenue chart
+* order chart
+* user growth
+* lab performance
+* pending reports
+* date filtering
+
+IMPORTANT:
+
+* Keep current dashboard layout.
+* Only improve functionality.
+
+---
+
+# 17-STEP ENTERPRISE DEVELOPMENT PROMPT SEQUENCE
+
+This is the FINAL production workflow.
+
+IMPORTANT:
+
+* Use ONE prompt at a time.
+* Never give multiple prompts together.
+* Finish one step completely before starting next.
+* Test after every step.
+* Commit code after every successful step.
+* Create separate git branch for every step.
+
+Branch naming example:
+
+```text
+feature/admin-api-system
+feature/upload-system
+feature/service-management
+```
+
+---
+
+# STEP 1 — ADMIN API FOUNDATION
+
+Purpose:
+Stabilize admin backend structure before touching business modules.
+
+Prompt:
+
+You are working on an existing Next.js + Prisma laboratory marketplace project.
+
+IMPORTANT:
+
+* Do NOT scan entire project.
+* Only inspect admin API utilities and existing admin route structure.
+* Use existing schema_new and data_new structure.
+* Do NOT modify unrelated modules.
+* Do NOT change frontend design.
+* Do NOT rewrite authentication.
+
+TASK:
+Create reusable admin API foundation.
+
+Build:
+
+1. centralized API response helper
+2. reusable error handler
+3. reusable async wrapper
+4. reusable pagination response
+5. reusable validation response
+6. reusable API utility folder
+7. reusable Prisma transaction helper
+8. reusable admin middleware structure
+
+Requirements:
+
+* TypeScript support
+* backward compatibility
+* modular architecture
+* proper HTTP status codes
+* comments for all new logic
+
+OUTPUT:
+
+* utility files
+* one sample admin route integration
+* no frontend modifications
+
+DO NOT:
+
+* refactor whole backend
+* rewrite existing APIs
+* change database schema
+
+---
+
+# STEP 2 — REUSABLE ADMIN TABLE SYSTEM
+
+Purpose:
+Create reusable table architecture for all future modules.
+
+Prompt:
+
+Build reusable AdminTable system only.
+
+IMPORTANT:
+
+* Do NOT redesign dashboard.
+* Do NOT modify unrelated pages.
+* Integrate into ONLY one page for testing.
+
+Features:
+
+1. pagination
+2. search
+3. sorting
+4. filters
+5. status badges
+6. action buttons
+7. loading state
+8. empty state
+9. responsive support
+10. bulk selection
+
+Requirements:
+
+* reusable column config
+* reusable action config
+* TypeScript types
+* modular architecture
+* Tailwind compatibility
+* existing design compatibility
+
+OUTPUT:
+
+* AdminTable component
+* reusable filter component
+* reusable search component
+* one demo integration
+
+DO NOT:
+
+* hardcode business logic
+* rewrite admin pages
+
+---
+
+# STEP 3 — GLOBAL UPLOAD SYSTEM
+
+Purpose:
+Create one upload system used everywhere.
+
+Prompt:
+
+Build reusable enterprise upload system.
+
+IMPORTANT:
+
+* Only work on upload functionality.
+* Keep existing uploads working.
+* Do NOT redesign forms.
+
+Features:
+
+1. image upload
+2. PDF upload
+3. multi-file upload
+4. drag/drop upload
+5. upload progress
+6. image preview
+7. file validation
+8. upload error handling
+9. reusable upload component
+10. reusable upload API
+
+Validation:
+
+* file size
+* MIME type
+* image dimensions
+
+Requirements:
+
+* Alibaba OSS compatible architecture
+* modular upload utilities
+* reusable hooks
+* TypeScript support
+
+OUTPUT:
+
+* UploadManager component
+* upload API
+* upload utilities
+* one sample integration
+
+DO NOT:
+
+* refactor unrelated APIs
+* break current uploads
+
+---
+
+# STEP 4 — CATEGORY MANAGEMENT
+
+Purpose:
+Fix and complete category management safely.
+
+Prompt:
+
+Existing add-category already works.
+
+TASK:
+Extend category management without breaking current logic.
+
+Features:
+
+1. edit category
+2. delete category
+3. category status
+4. category image
+5. nested categories
+6. category sorting
+7. category search
+8. category pagination
+9. SEO fields
+10. soft delete
+
+Requirements:
+
+* keep current category creation functional
+* use existing Prisma structure
+* reusable form validation
+* reusable category table
+* slug uniqueness validation
+
+OUTPUT:
+
+* updated category APIs
+* updated admin UI
+* reusable hooks
+* safe migrations only if necessary
+
+DO NOT:
+
+* rewrite category module
+* redesign UI
+* remove existing data
+
+---
+
+# STEP 5 — SERVICE MANAGEMENT
+
+Purpose:
+Create full service marketplace management.
+
+Prompt:
+
+Build complete service management system only.
+
+IMPORTANT:
+
+* Do NOT modify unrelated modules.
+* Keep existing frontend service pages functional.
+
+Features:
+
+1. create service
+2. edit service
+3. delete service
+4. service gallery
+5. pricing
+6. category assignment
+7. laboratory assignment
+8. featured services
+9. service status
+10. search/filter
+11. pagination
+12. SEO metadata
+
+Requirements:
+
+* reusable service form
+* reusable service table
+* upload integration
+* modular APIs
+* validation everywhere
+* TypeScript support
+
+OUTPUT:
+
+* service CRUD APIs
+* admin UI integration
+* reusable service hooks
+
+DO NOT:
+
+* redesign service pages
+* rewrite authentication
+
+---
+
+# STEP 6 — LABORATORY MANAGEMENT
+
+Purpose:
+Transform project into multi-vendor marketplace.
+
+Prompt:
+
+Build laboratory vendor management only.
+
+IMPORTANT:
+
+* One lab must never access another lab's data.
+* Do NOT modify customer frontend.
+
+Features:
+
+1. lab CRUD
+2. lab profile
+3. lab approval system
+4. lab verification
+5. certification upload
+6. service assignment
+7. status management
+8. search/filter
+9. pagination
+10. soft delete
+
+Requirements:
+
+* vendor-safe architecture
+* relation with services
+* reusable laboratory form
+* reusable laboratory table
+* validation and permissions
+
+OUTPUT:
+
+* lab APIs
+* admin UI
+* reusable hooks
+
+DO NOT:
+
+* rewrite service system
+* redesign layouts
+
+---
+
+# STEP 7 — EQUIPMENT MANAGEMENT
+
+Purpose:
+Show laboratory capabilities professionally.
+
+Prompt:
+
+Build equipment management only.
+
+Features:
+
+1. equipment CRUD
+2. equipment image upload
+3. calibration date
+4. maintenance date
+5. equipment status
+6. assigned laboratory
+7. search/filter
+8. pagination
+
+Requirements:
+
+* relation with laboratories
+* reusable equipment form
+* reusable equipment table
+* maintenance status badges
+* validation
+
+OUTPUT:
+
+* equipment APIs
+* admin UI
+* reusable hooks
+
+DO NOT:
+
+* modify unrelated systems
+
+---
+
+# STEP 8 — ORDER MANAGEMENT
+
+Purpose:
+Build enterprise order lifecycle.
+
+Prompt:
+
+Build order management only.
+
+IMPORTANT:
+
+* Existing order/payment flow may partially work.
+* Extend safely.
+
+Features:
+
+1. order list
+2. order details
+3. order timeline
+4. status tracking
+5. lab assignment
+6. refund status
+7. invoice support
+8. search/filter
+9. pagination
+10. audit logs
+
+Statuses:
+
+* PENDING
+* PAID
+* SAMPLE_RECEIVED
+* IN_PROGRESS
+* REPORT_READY
+* COMPLETED
+* CANCELLED
+
+Requirements:
+
+* reusable order table
+* reusable details modal
+* modular APIs
+* validation
+
+OUTPUT:
+
+* updated order APIs
+* admin UI
+* status system
+
+DO NOT:
+
+* rewrite payment gateway
+* redesign checkout flow
+
+---
+
+# STEP 9 — SAMPLE MANAGEMENT
+
+Purpose:
+Track physical testing samples.
+
+Prompt:
+
+Build sample tracking system only.
+
+Features:
+
+1. sample creation
+2. sample tracking
+3. sample status
+4. barcode generation
+5. QR generation
+6. storage condition
+7. assigned laboratory
+8. tracking history
+9. pagination
+10. validation
+
+Requirements:
+
+* relation with orders
+* reusable sample table
+* reusable timeline
+* modular APIs
+
+OUTPUT:
+
+* sample APIs
+* admin UI
+* tracking utilities
+
+DO NOT:
+
+* redesign orders system
+
+---
+
+# STEP 10 — REPORT MANAGEMENT
+
+Purpose:
+Build secure report ecosystem.
+
+Prompt:
+
+Build report management only.
+
+Features:
+
+1. PDF upload
+2. report verification hash
+3. QR verification
+4. report preview
+5. report download
+6. report history
+7. report status
+8. audit logs
+9. pagination
+10. validation
+
+Requirements:
+
+* relation with samples/orders
+* secure upload handling
+* reusable report table
+* reusable preview modal
+
+OUTPUT:
+
+* report APIs
+* report UI
+* verification utilities
+
+DO NOT:
+
+* redesign upload system
+* modify unrelated modules
+
+---
+
+# STEP 11 — USER MANAGEMENT
+
+Purpose:
+Create enterprise admin user control.
+
+Prompt:
+
+Build user management only.
+
+IMPORTANT:
+
+* Keep existing authentication functional.
+* Do NOT rewrite login/register.
+
+Features:
+
+1. user list
+2. user details
+3. role assignment
+4. account suspension
+5. verification status
+6. search/filter
+7. pagination
+8. audit logs
+
+Requirements:
+
+* RBAC integration
+* reusable user table
+* reusable role system
+* validation
+
+OUTPUT:
+
+* user APIs
+* admin UI
+* permission integration
+
+DO NOT:
+
+* rewrite auth system
+
+---
+
+# STEP 12 — APPOINTMENT MANAGEMENT
+
+Purpose:
+Manage bookings and schedules.
+
+Prompt:
+
+Build appointment management only.
+
+Features:
+
+1. appointment CRUD
+2. scheduling system
+3. appointment status
+4. lab assignment
+5. technician assignment
+6. date filtering
+7. notifications
+8. search/filter
+
+Requirements:
+
+* relation with orders/labs
+* reusable appointment table
+* reusable calendar components
+* validation
+
+OUTPUT:
+
+* appointment APIs
+* admin UI
+* scheduling utilities
+
+DO NOT:
+
+* redesign order system
+
+---
+
+# STEP 13 — TRANSACTION MANAGEMENT
+
+Purpose:
+Track all financial activity.
+
+Prompt:
+
+Build transaction management only.
+
+IMPORTANT:
+
+* Financial consistency is critical.
+* Do NOT rewrite payment gateways.
+
+Features:
+
+1. transaction list
+2. payout tracking
+3. refund tracking
+4. commission tracking
+5. invoice records
+6. search/filter
+7. pagination
+8. audit logs
+
+Requirements:
+
+* reusable finance table
+* modular APIs
+* validation
+* transaction-safe operations
+
+OUTPUT:
+
+* finance APIs
+* finance UI
+* reusable finance utilities
+
+DO NOT:
+
+* rewrite checkout/payment flow
+
+---
+
+# STEP 14 — CMS MANAGEMENT
+
+Purpose:
+Make website editable from admin.
+
+Prompt:
+
+Build editable CMS system only.
+
+IMPORTANT:
+
+* Keep frontend homepage design unchanged.
+* Only make content editable.
+
+Features:
+
+1. homepage banners
+2. hero editing
+3. FAQ management
+4. blog management
+5. SEO fields
+6. image management
+7. page sections
+8. reusable content blocks
+
+Requirements:
+
+* reusable CMS editor
+* upload integration
+* validation
+* multilingual compatibility
+
+OUTPUT:
+
+* CMS APIs
+* admin pages
+* reusable content components
+
+DO NOT:
+
+* redesign homepage
+
+---
+
+# STEP 15 — WEBSITE SETTINGS
+
+Purpose:
+Centralize website configuration.
+
+Prompt:
+
+Build website settings management only.
+
+Features:
+
+1. site name
+2. logo upload
+3. favicon upload
+4. SMTP settings
+5. SEO defaults
+6. social links
+7. maintenance mode
+8. language settings
+9. currency settings
+10. upload settings
+
+Requirements:
+
+* secure settings storage
+* validation
+* reusable settings form
+* environment-safe handling
+
+OUTPUT:
+
+* settings APIs
+* admin settings UI
+* reusable settings utilities
+
+DO NOT:
+
+* modify deployment configuration
+* rewrite environment handling
+
+---
+
+# STEP 16 — TRANSLATION MANAGEMENT
+
+Purpose:
+Support multilingual China marketplace.
+
+Prompt:
+
+Build translation management only.
+
+IMPORTANT:
+
+* Existing next-intl structure must stay functional.
+
+Features:
+
+1. translation editor
+2. JSON translation sync
+3. language switching
+4. dynamic translation update
+5. multilingual CMS support
+6. locale management
+
+Languages:
+
+* Chinese
+* English
+* Bengali
+
+Requirements:
+
+* modular translation APIs
+* reusable translation editor
+* validation
+* SEO localization support
+
+OUTPUT:
+
+* translation APIs
+* translation admin UI
+* reusable localization utilities
+
+DO NOT:
+
+* rewrite existing frontend routing
+
+---
+
+# STEP 17 — DASHBOARD ANALYTICS + RECOMMENDATIONS
+
+Purpose:
+Create enterprise intelligence layer.
+
+Prompt:
+
+Build dashboard analytics and recommendation system only.
+
+Features:
+
+1. KPI cards
+2. revenue chart
+3. order chart
+4. user growth chart
+5. lab performance analytics
+6. pending reports analytics
+7. top services analytics
+8. recommendation widgets
+9. date filtering
+10. optimized analytics queries
+
+Requirements:
+
+* reusable analytics widgets
+* modular APIs
+* optimized database queries
+* loading states
+* scalable architecture
+
+OUTPUT:
+
+* analytics APIs
+* dashboard widgets
+* recommendation utilities
+
+DO NOT:
+
+* redesign whole dashboard
+* modify unrelated modules
+
+---
+
+# FINAL ENTERPRISE GOAL
+
+Your platform should evolve into:
+
+```text
+Laboratory ERP + Marketplace + AI SaaS Platform
+```
+
+not just:
+
+```text
+simple testing service website
+```
+
+That is how you build a scalable China-market laboratory ecosystem.

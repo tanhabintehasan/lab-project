@@ -17,6 +17,8 @@ const adminCategoryCreateSchema = z.object({
   slug: z.string().min(1, 'slug不能为空'),
   descZh: z.string().optional().nullable(),
   icon: z.string().optional().nullable(),
+  iconUrl: z.string().optional().nullable(),
+  image: z.string().optional().nullable(),
   sortOrder: z.number().int().optional().default(0),
   isActive: z.boolean().optional().default(true),
 });
@@ -95,6 +97,8 @@ const handlePost = async (request: NextRequest, user: JWTPayload) => {
         slug: normalizedSlug,
         descZh: data.descZh?.trim() || null,
         icon: data.icon?.trim() || null,
+        iconUrl: data.iconUrl?.trim() || null,
+        image: data.image?.trim() || null,
         sortOrder: data.sortOrder ?? 0,
         isActive: data.isActive ?? true,
       },

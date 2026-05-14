@@ -35,6 +35,7 @@ interface LabItem {
   province?: string;
   phone?: string;
   email?: string;
+  imageUrl?: string | null;
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
   createdAt: string;
 }
@@ -80,6 +81,7 @@ const initialForm = {
   phone: '',
   email: '',
   status: 'PENDING' as LabItem['status'],
+  imageUrl: '',
 };
 
 export default function AdminLabsPage() {
@@ -186,6 +188,7 @@ export default function AdminLabsPage() {
       phone: fullLab.phone || '',
       email: fullLab.email || '',
       status: fullLab.status || 'PENDING',
+      imageUrl: fullLab.imageUrl || '',
     });
     setModalOpen(true);
   };
@@ -210,6 +213,7 @@ export default function AdminLabsPage() {
         phone: form.phone.trim() || undefined,
         email: form.email.trim() || undefined,
         status: form.status,
+        imageUrl: form.imageUrl.trim() || null,
       };
 
       const res = await fetch(
@@ -480,6 +484,72 @@ export default function AdminLabsPage() {
               <option value="INACTIVE">停用</option>
             </select>
           </div>
+
+          {/* Dual-mode image upload */}
+          <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+            <label className="block text-sm font-medium text-gray-700">实验室图片</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="https://example.com/lab.jpg"
+                value={form.imageUrl}
+                onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))}
+                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+              {form.imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, imageUrl: '' }))}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-500 hover:text-red-500 transition"
+                >
+                  清除
+                </button>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  setSaving(true);
+                  const uploadForm = new FormData();
+                  uploadForm.append('file', file);
+                  uploadForm.append('folder', 'lab-media');
+                  uploadForm.append('entityType', 'LAB');
+                  const res = await fetch('/api/admin/upload', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: uploadForm,
+                  });
+                  const data = await res.json();
+                  if (res.ok && data?.success && data.data?.url) {
+                    setForm((p) => ({ ...p, imageUrl: data.data.url }));
+                  } else {
+                    setError(data?.error || '上传图片失败');
+                  }
+                } catch {
+                  setError('上传图片失败');
+                } finally {
+                  setSaving(false);
+                  e.target.value = '';
+                }
+              }}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {form.imageUrl && (
+              <div className="relative h-32 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                <img
+                  src={form.imageUrl}
+                  alt="Preview"
+                  className="h-full w-full object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-2">
             <Button onClick={handleSave} loading={saving}>
               {editingId ? '保存修改' : '保存'}

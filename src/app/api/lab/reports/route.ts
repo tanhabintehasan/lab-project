@@ -26,7 +26,7 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
         summaryZh: data.summaryZh,
         summaryEn: data.summaryEn,
         fileUrl: data.fileUrl,
-        status: 'DRAFT',
+        status: 'UNDER_REVIEW',
       },
     });
     await prisma.auditLog.create({
@@ -39,4 +39,4 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
   }
 };
 
-export const POST = withAuth(handler, ['LAB_PARTNER']);
+export const POST = withAuth(handler, ['LAB_PARTNER', 'LAB_MANAGER', 'TECHNICIAN']);

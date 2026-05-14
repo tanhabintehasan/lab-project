@@ -169,16 +169,14 @@ export async function POST(request: NextRequest) {
 
     const equipment = await prisma.equipment.findUnique({
       where: { id: data.equipmentId },
-      select: {
-        id: true,
-        nameZh: true,
-        slug: true,
-        status: true,
-        bookable: true,
-        isActive: true,
-        quantity: true,
-        hourlyRate: true,
-        dailyRate: true,
+      include: {
+        lab: {
+          select: {
+            id: true,
+            nameZh: true,
+            operatingHours: true,
+          },
+        },
       },
     });
 
@@ -192,6 +190,33 @@ export async function POST(request: NextRequest) {
 
     if (equipment.status !== 'AVAILABLE') {
       return errorResponse('该设备当前状态不可预约', 400);
+    }
+
+    // ─── Lab operating hours check ─────────────────────────────
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[bookingDate.getUTCDay()];
+    const operatingHours = equipment.lab?.operatingHours as Record<string, { open: string; close: string } | null> | null;
+    const dayHours = operatingHours?.[dayName];
+
+    if (!dayHours || !dayHours.open || !dayHours.close) {
+      return errorResponse('实验室当天不营业，请选择其他日期', 400);
+    }
+
+    if (data.startTime < dayHours.open || data.endTime > dayHours.close) {
+      return errorResponse(`预约时间必须在营业时间 ${dayHours.open} - ${dayHours.close} 内`, 400);
+    }
+
+    // ─── Equipment schedule (maintenance/downtime) check ───────
+    const schedules = await prisma.equipmentSchedule.findMany({
+      where: {
+        equipmentId: data.equipmentId,
+        startTime: { lt: endDateTime },
+        endTime: { gt: startDateTime },
+      },
+    });
+
+    if (schedules.length > 0) {
+      return errorResponse('所选时间段设备处于维护/停用状态，请选择其他时间', 409);
     }
 
     const overlappingCount = await bookingModel.count({

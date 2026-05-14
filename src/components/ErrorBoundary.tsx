@@ -35,18 +35,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
-              <svg
-                className="w-6 h-6 text-red-600"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full text-red-600 text-xl font-bold">
+              ✕
             </div>
             <h1 className="mt-4 text-xl font-semibold text-center text-gray-900">
               Something went wrong

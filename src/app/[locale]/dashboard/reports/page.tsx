@@ -17,7 +17,7 @@ import {
 import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/skeleton';
-import { FileText, Eye, Download } from 'lucide-react';
+import { FileText, Eye, Download, Copy, Key } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 export default function ReportsPage() {
@@ -44,6 +44,31 @@ export default function ReportsPage() {
     fetchData();
   }, [fetchData]);
 
+  const handleDownload = async (reportId: string) => {
+    try {
+      const res = await fetch(`/api/reports/${reportId}/download`, {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data?.success && data.downloadUrl) {
+        // Show password alert
+        if (data.pdfPassword) {
+          const copy = confirm(
+            `PDF Password: ${data.pdfPassword}\n\nClick OK to copy password and open download.\nYou will need this password to open the PDF.`
+          );
+          if (copy) {
+            navigator.clipboard.writeText(data.pdfPassword);
+          }
+        }
+        window.open(data.downloadUrl, '_blank');
+      } else {
+        alert(data?.error || 'Download failed');
+      }
+    } catch {
+      alert('Download failed');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -52,18 +77,18 @@ export default function ReportsPage() {
         {loading ? (
           <TableSkeleton />
         ) : reports.length === 0 ? (
-          <EmptyState icon={FileText} title="暂无报告" description="订单完成检测后，报告将在此显示" />
+          <EmptyState icon={FileText} title="No reports" description="Reports will appear here after admin approval." />
         ) : (
           <Card padding="none">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('reportNo')}</TableHead>
-                  <TableHead>标题</TableHead>
-                  <TableHead>订单</TableHead>
-                  <TableHead>状态</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>{t('issuedDate')}</TableHead>
-                  <TableHead>操作</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -101,7 +126,7 @@ export default function ReportsPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => window.open(fileUrl)}
+                                onClick={() => handleDownload(r.id as string)}
                               >
                                 <Download className="h-4 w-4" />
                               </Button>

@@ -4,13 +4,12 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { siteSettingSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
+import { getAdminSettings, invalidateSiteSettingsCache } from '@/lib/site-settings-cache';
 
 const handleGet = async () => {
   try {
-    const settings = await prisma.siteSetting.findFirst({
-      orderBy: { createdAt: 'asc' },
-    });
-    return successResponse(settings || {});
+    const settings = await getAdminSettings();
+    return successResponse(settings);
   } catch (err: any) {
     console.error('GET /api/admin/site-settings error:', err?.message || err);
     return errorResponse('获取失败', 500);
@@ -49,6 +48,9 @@ const handlePut = async (request: NextRequest, user: JWTPayload) => {
         },
       });
     });
+
+    // Invalidate cache so next read picks up the new values
+    invalidateSiteSettingsCache();
 
     return successResponse(settings);
   } catch (error: any) {

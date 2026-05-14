@@ -11,12 +11,11 @@ import { createToken } from '@/lib/auth';
 import prisma from '@/lib/db';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
+import { normalizePhoneStrict } from '@/lib/phone-utils';
 
 const requestSchema = z.object({
-  phone: z.string()
-    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
-    .or(z.string().regex(/^1[3-9]\d{9}$/, 'Invalid phone number')),
-  code: z.string().length(6, 'OTP code must be 6 digits')
+  phone: z.string().min(1, '请输入手机号'),
+  code: z.string().length(6, '验证码必须是6位数字')
 });
 
 export async function POST(request: NextRequest) {
@@ -37,29 +36,42 @@ export async function POST(request: NextRequest) {
     }
 
     const { phone, code } = validation.data;
-    
-    // Normalize phone number
-    const normalizedPhone = phone.startsWith('+') ? phone : `+86${phone}`;
+
+    // Normalize phone to E.164
+    const normalizedPhone = normalizePhoneStrict(phone);
+    if (!normalizedPhone) {
+      console.error('[login-phone] Invalid phone format:', phone);
+      return NextResponse.json({ success: false, error: '手机号格式无效' }, { status: 400 });
+    }
+
+    console.log('[login-phone] OTP login attempt for:', normalizedPhone);
 
     // Verify OTP
     const otpResult = await verifyOTP(normalizedPhone, code, 'login');
-    
+
     if (!otpResult.success) {
+      console.warn('[login-phone] OTP verification failed:', otpResult.error);
       return NextResponse.json(
-        {
-          success: false,
-          error: otpResult.error
-        },
+        { success: false, error: otpResult.error },
         { status: 400 }
       );
     }
 
-    // Find or create user
+    // Find user by normalized phone ONLY
     let user = await prisma.user.findUnique({
       where: { phone: normalizedPhone }
     });
 
+    if (user && (user.status === 'INACTIVE' || user.status === 'SUSPENDED' || user.status === 'PENDING_VERIFICATION')) {
+      console.warn('[login-phone] Blocked login — account status:', user.status, 'user:', user.id);
+      return NextResponse.json(
+        { success: false, error: '账户已被禁用或尚未激活' },
+        { status: 403 }
+      );
+    }
+
     if (!user) {
+      console.log('[login-phone] Creating new user for phone:', normalizedPhone);
       // Create new user with phone login
       user = await prisma.user.create({
         data: {
@@ -74,6 +86,7 @@ export async function POST(request: NextRequest) {
 
       // Create wallet for new phone-login users
       await prisma.wallet.create({ data: { userId: user.id } });
+      console.log('[login-phone] Created user and wallet:', user.id);
     } else {
       // Update phone verification status
       if (!user.phoneVerified) {
@@ -96,7 +109,11 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email || '',
       role: user.role,
-      sessionId
+      sessionId,
+      name: user.name,
+      avatar: user.avatar || undefined,
+      locale: user.locale || undefined,
+      phone: user.phone || undefined,
     });
 
     // Store session in database
@@ -122,8 +139,11 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60 // 7 days
     });
+
+    console.log('[login-phone] Login successful for user:', user.id);
 
     return NextResponse.json({
       success: true,
@@ -131,10 +151,13 @@ export async function POST(request: NextRequest) {
       user: {
         id: user.id,
         phone: user.phone,
+        email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        avatar: user.avatar,
+        locale: user.locale,
       },
-      token
+      // token intentionally omitted — httpOnly cookie only
     });
   } catch (error) {
     console.error('Phone login error:', error);

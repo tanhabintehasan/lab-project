@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
         slug: true,
         descZh: true,
         icon: true,
+        iconUrl: true,
         _count: {
           select: {
             services: {
@@ -45,13 +46,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const mapped = categories.map((cat: CategoryRow) => ({
+    const mapped = categories.map((cat: CategoryRow & { iconUrl: string | null }) => ({
       id: cat.id,
       slug: cat.slug,
       nameZh: cat.nameZh,
       nameEn: cat.nameEn,
       descZh: cat.descZh,
       icon: cat.icon,
+      iconUrl: cat.iconUrl,
       serviceCount: cat._count.services,
     }));
 

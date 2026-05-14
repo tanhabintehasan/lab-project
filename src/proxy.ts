@@ -1,6 +1,8 @@
-import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from './config/i18n';
+import { verifyTokenEdge } from './lib/auth-edge';
+import { checkRouteAccess, ROLES } from './lib/rbac';
 
 const intlMiddleware = createMiddleware({
   locales,
@@ -39,7 +41,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
-export default function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const cleanPath = getPathnameWithoutLocale(pathname);
 
@@ -55,19 +57,53 @@ export default function proxy(request: NextRequest) {
     (prefix) => cleanPath === prefix || cleanPath.startsWith(`${prefix}/`)
   );
 
+  const locale = getLocaleFromPathname(pathname);
+  const loginPath =
+    locale === defaultLocale ? '/auth/login' : `/${locale}/auth/login`;
+
   if (isProtected) {
     const token = request.cookies.get('auth-token')?.value;
 
+    // No token → redirect to login
     if (!token) {
-      const locale = getLocaleFromPathname(pathname);
-
-      const loginPath =
-        locale === defaultLocale ? '/auth/login' : `/${locale}/auth/login`;
-
       const loginUrl = new URL(loginPath, request.url);
       loginUrl.searchParams.set('callbackUrl', cleanPath);
-
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Verify JWT
+    const payload = await verifyTokenEdge(token);
+    if (!payload) {
+      const loginUrl = new URL(loginPath, request.url);
+      loginUrl.searchParams.set('callbackUrl', cleanPath);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // ─── RBAC: Strict role check for route prefixes ───────────
+    const role = payload.role;
+
+    // /admin requires SUPER_ADMIN or FINANCE_ADMIN (strict string comparison)
+    if (cleanPath.startsWith('/admin')) {
+      const allowed = role === ROLES.SUPER_ADMIN || role === ROLES.FINANCE_ADMIN;
+      if (!allowed) {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+    }
+
+    // /lab-portal requires LAB_MANAGER, TECHNICIAN, or LAB_PARTNER (strict string comparison)
+    if (cleanPath.startsWith('/lab-portal')) {
+      const allowed =
+        role === ROLES.LAB_MANAGER ||
+        role === ROLES.TECHNICIAN ||
+        role === ROLES.LAB_PARTNER;
+      if (!allowed) {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+    }
+
+    // Generic RBAC check via centralized rule engine (future-proof)
+    if (!checkRouteAccess(role, cleanPath)) {
+      return NextResponse.redirect(new URL('/', request.url));
     }
   }
 

@@ -8,12 +8,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const { page, pageSize, skip } = getPaginationParams(request);
-    const url = new URL(request.url);
-    const status = url.searchParams.get('status') || undefined;
 
     const where = {
       order: { userId: user.userId },
-      ...(status ? { status: status as never } : {}),
+      status: 'PUBLISHED' as const,
     };
 
     const [reports, total] = await Promise.all([

@@ -44,7 +44,23 @@ export default function ServiceDetailPage() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data?.success) setService(data.data);
+        if (data?.success) {
+          setService(data.data);
+          // Track service view for AI recommendations
+          const catId = data.data?.categoryId;
+          if (catId) {
+            fetch('/api/services/track-view', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                categoryId: catId,
+                serviceId: data.data.id,
+                sourcePage: 'service_detail',
+              }),
+            }).catch(() => {});
+          }
+        }
       })
       .finally(() => setLoading(false));
   }, [slug]);

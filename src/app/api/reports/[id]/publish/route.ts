@@ -102,4 +102,4 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
   }
 };
 
-export const POST = withAuth(handler, ['SUPER_ADMIN', 'LAB_PARTNER']);
+export const POST = withAuth(handler, ['SUPER_ADMIN']);

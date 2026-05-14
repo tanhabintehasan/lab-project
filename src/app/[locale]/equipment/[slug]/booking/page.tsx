@@ -19,13 +19,13 @@ import {
   Wrench,
   ShieldCheck,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 interface EquipmentDetail {
   id: string;
   slug: string;
   nameZh: string;
-  // nameEn removed - Chinese only
   model?: string;
   manufacturer?: string;
   descZh?: string;
@@ -58,6 +58,17 @@ interface BookingFormState {
   serviceName: string;
   purpose: string;
   notes: string;
+}
+
+interface TimeSlot {
+  start: string;
+  end: string;
+}
+
+interface AvailabilityData {
+  availableSlots: TimeSlot[];
+  labHours?: { open: string; close: string } | null;
+  reason?: string;
 }
 
 const statusMap = (t: (key: string) => string): Record<
@@ -100,6 +111,8 @@ export default function EquipmentBookingPage() {
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof BookingFormState, string>>>({});
+  const [availability, setAvailability] = useState<AvailabilityData | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -147,6 +160,35 @@ export default function EquipmentBookingPage() {
     };
   }, [slug]);
 
+  // Fetch availability when date or equipment changes
+  useEffect(() => {
+    if (!equipment?.id || !form.bookingDate) return;
+
+    let mounted = true;
+    setAvailabilityLoading(true);
+
+    fetch(`/api/bookings/availability?equipmentId=${equipment.id}&date=${form.bookingDate}`, {
+      credentials: 'include',
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!mounted) return;
+        if (data?.success) {
+          setAvailability(data.data);
+        } else {
+          setAvailability({ availableSlots: [], reason: data?.error });
+        }
+      })
+      .catch(() => {
+        if (mounted) setAvailability({ availableSlots: [], reason: 'Failed to load availability' });
+      })
+      .finally(() => {
+        if (mounted) setAvailabilityLoading(false);
+      });
+
+    return () => { mounted = false; };
+  }, [equipment?.id, form.bookingDate]);
+
   const statusInfo = useMemo(() => {
     if (!equipment?.status) return statusMap(tEquip).UNAVAILABLE;
     return statusMap(tEquip)[equipment.status] || statusMap(tEquip).UNAVAILABLE;
@@ -158,6 +200,11 @@ export default function EquipmentBookingPage() {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: '' }));
     setSubmitError('');
+  };
+
+  const selectTimeSlot = (slot: TimeSlot) => {
+    setForm(prev => ({ ...prev, startTime: slot.start, endTime: slot.end }));
+    setErrors(prev => ({ ...prev, startTime: '', endTime: '' }));
   };
 
   const validateForm = () => {
@@ -418,7 +465,6 @@ export default function EquipmentBookingPage() {
                 <div>
                   <p className="text-sm text-gray-500">{t('equipmentLabel')}</p>
                   <h2 className="text-xl font-bold text-gray-900 mt-1">{equipment.nameZh}</h2>
-                  {/* nameEn removed - Chinese only */}
                 </div>
 
                 {equipment.model ? (
@@ -459,6 +505,57 @@ export default function EquipmentBookingPage() {
                   </div>
                 ) : null}
               </div>
+            </Card>
+
+            {/* Availability Panel */}
+            <Card padding="lg">
+              <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Clock3 className="h-4 w-4 text-blue-600" />
+                Availability on {form.bookingDate}
+              </h3>
+
+              {availabilityLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking availability...
+                </div>
+              ) : !availability ? (
+                <p className="text-sm text-gray-400">Select a date to see available slots.</p>
+              ) : availability.reason && availability.availableSlots.length === 0 ? (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
+                  {availability.reason}
+                </div>
+              ) : availability.availableSlots.length === 0 ? (
+                <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-500">
+                  No available slots for this date.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {availability.labHours && (
+                    <p className="text-xs text-gray-500">
+                      Lab hours: {availability.labHours.open} - {availability.labHours.close}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {availability.availableSlots.map((slot, idx) => {
+                      const isSelected = form.startTime === slot.start && form.endTime === slot.end;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => selectTimeSlot(slot)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300'
+                          }`}
+                        >
+                          {slot.start} - {slot.end}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card padding="lg">

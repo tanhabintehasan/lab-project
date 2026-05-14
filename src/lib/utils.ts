@@ -34,20 +34,18 @@ export function formatDateTime(date: Date | string, locale: string = 'zh-CN'): s
 }
 
 export function generateOrderNo(): string {
-  const date = new Date();
-  const prefix = 'ORD';
-  const timestamp = date.getFullYear().toString() +
-    (date.getMonth() + 1).toString().padStart(2, '0') +
-    date.getDate().toString().padStart(2, '0');
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `${prefix}${timestamp}${random}`;
+  const year = new Date().getFullYear();
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `LAB-${year}-${random}`;
 }
 
 export function generateSampleNo(): string {
-  const prefix = 'SPL';
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${prefix}${timestamp}${random}`;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // omit I, O, 0, 1 to avoid confusion
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 export function generateReportNo(): string {
