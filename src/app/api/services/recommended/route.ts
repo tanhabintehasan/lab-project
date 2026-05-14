@@ -12,6 +12,8 @@ import { NextRequest } from 'next/server';
 import { getAuthUser, successResponse, errorResponse } from '@/lib/api-helpers';
 import { getRecommendationsForUser } from '@/lib/recommendation-engine';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser(request);

@@ -6,6 +6,8 @@ import { labReportCreateSchema } from '@/lib/validations';
 import { generateReportNo } from '@/lib/utils';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handler = async (request: NextRequest, user: JWTPayload) => {
   try {
     const body = await request.json();

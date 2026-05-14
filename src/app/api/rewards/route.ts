@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { getAuthUser, successResponse, errorResponse } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 const rewardConfigSchema = z.object({
   registrationReward: z.number().min(0).optional(),
   commissionRate: z.number().min(0).max(1).optional(),

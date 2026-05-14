@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, paginatedResponse, getPaginationParams, getAuthUser } from '@/lib/api-helpers';
 import { generateOrderNo, generateSampleNo } from '@/lib/utils';
 
+export const runtime = 'nodejs';
+
 // GET - List orders
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);

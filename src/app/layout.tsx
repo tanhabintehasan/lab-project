@@ -1,5 +1,8 @@
 import '@/app/globals.css';
 
+// Force Node.js runtime — Prisma + pg adapter are not Edge-compatible
+export const runtime = 'nodejs';
+
 export default function RootLayout({
   children,
 }: {

@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { errorResponse, getAuthUser, getPaginationParams, paginatedResponse } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return errorResponse('未授权', 401);

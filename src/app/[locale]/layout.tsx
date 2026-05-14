@@ -14,6 +14,9 @@ import { validateEnv } from '@/lib/env-validation';
 import { getPublicSettings } from '@/lib/site-settings-cache';
 import '@/app/globals.css';
 
+// Force Node.js runtime for the entire app — Prisma + pg are not Edge-compatible
+export const runtime = 'nodejs';
+
 // Validate required environment variables at startup (build + runtime)
 validateEnv();
 

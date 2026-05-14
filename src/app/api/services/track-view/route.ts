@@ -12,6 +12,8 @@ import { getAuthUser, successResponse, errorResponse } from '@/lib/api-helpers';
 import { invalidateUserRecommendations } from '@/lib/recommendation-engine';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const trackSchema = z.object({
   categoryId: z.string().min(1),
   serviceId: z.string().optional(),

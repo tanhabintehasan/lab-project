@@ -2,6 +2,14 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
+// Safety guard: pg + PrismaPg are Node-only and will crash in Edge runtime
+if (typeof (globalThis as any).EdgeRuntime !== 'undefined') {
+  throw new Error(
+    'Prisma client with pg adapter cannot run in Edge runtime. ' +
+    'Add "export const runtime = \'nodejs\';" to your page/layout/route.'
+  );
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };

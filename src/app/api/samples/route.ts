@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, paginatedResponse, getPaginationParams, getAuthUser } from '@/lib/api-helpers';
 import { generateSampleNo } from '@/lib/utils';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return errorResponse('未授权', 401);

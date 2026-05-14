@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
 import { getPublicSettings } from '@/lib/site-settings-cache';
 
+export const runtime = 'nodejs';
+
 /**
  * GET /api/site-settings
  *

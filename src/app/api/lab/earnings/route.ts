@@ -4,6 +4,8 @@ import { requireLabAccess } from '@/lib/lab-auth';
 import { getLabWalletSummary } from '@/lib/financial-ledger';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handler = async (_request: NextRequest, user: JWTPayload) => {
   try {
     const { labId } = await requireLabAccess(user.userId);

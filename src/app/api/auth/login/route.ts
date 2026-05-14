@@ -6,6 +6,8 @@ import { successResponse, errorResponse } from '@/lib/api-helpers';
 import { loginSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   const rlKey = getRateLimitKey(request, 'login');
   const rl = rateLimit(rlKey, 10, 60_000);

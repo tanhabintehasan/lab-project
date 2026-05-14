@@ -11,6 +11,8 @@ import {
 } from '@/lib/api-helpers';
 import { generateRFQNo } from '@/lib/utils';
 
+export const runtime = 'nodejs';
+
 const requestTypeEnum = z.enum(['RFQ', 'CUSTOM_TESTING']);
 const expectedOutputEnum = z.enum(['REPORT', 'REPORT_CERTIFICATE']);
 const urgencyEnum = z.enum(['NORMAL', 'URGENT', 'VERY_URGENT']);
