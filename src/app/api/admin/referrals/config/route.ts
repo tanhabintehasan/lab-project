@@ -4,6 +4,8 @@ import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const configSchema = z.object({
   registrationReward: z.number().nonnegative(),
   commissionRate: z.number().min(0).max(1),

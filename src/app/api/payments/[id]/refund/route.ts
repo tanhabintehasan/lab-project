@@ -5,6 +5,8 @@ import { JWTPayload } from '@/lib/auth';
 import { getPaymentProvider } from '@/lib/payments';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const refundSchema = z.object({
   amount: z.number().positive().optional(),
   reason: z.string().optional(),

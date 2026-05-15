@@ -5,6 +5,8 @@ import { successResponse, errorResponse, withAuth, getPaginationParams, paginate
 import { cmsPageSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handleGet = async (request: NextRequest) => {
   try {
     const { page, pageSize, skip } = getPaginationParams(request);

@@ -6,6 +6,8 @@ import { successResponse, errorResponse } from '@/lib/api-helpers';
 import { resetPasswordSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   const rlKey = getRateLimitKey(request, 'reset-execute');
   const rl = rateLimit(rlKey, 5, 300_000);

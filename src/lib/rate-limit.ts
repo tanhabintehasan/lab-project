@@ -1,4 +1,12 @@
-// Simple in-memory rate limiter. In production use Redis.
+// Simple in-memory rate limiter.
+// ⚠️  WARNING: In serverless environments (Netlify, Vercel), each invocation
+// runs in a separate process/container. This means rate-limit state does NOT
+// persist across requests. A malicious actor can bypass limits by making
+// requests to different function instances.
+//
+// For production, migrate to Redis (e.g., Upstash Redis) or a Netlify Edge
+// rate-limiting plugin.
+
 const hits = new Map<string, { count: number; resetAt: number }>();
 
 export function rateLimit(

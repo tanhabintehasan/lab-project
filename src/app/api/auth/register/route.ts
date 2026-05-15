@@ -9,6 +9,8 @@ import { createOTP } from '@/lib/services/otp.service';
 import { sendEmail } from '@/lib/email';
 import { verificationEmail } from '@/lib/email-templates';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   const rlKey = getRateLimitKey(request, 'register');
   const rl = rateLimit(rlKey, 5, 60_000);

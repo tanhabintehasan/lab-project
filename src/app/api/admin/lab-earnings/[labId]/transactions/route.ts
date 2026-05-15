@@ -9,6 +9,8 @@ import {
 import { getLabTransactions, getLabWalletSummary } from '@/lib/financial-ledger';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handler = async (request: NextRequest, _user: JWTPayload) => {
   try {
     const url = new URL(request.url);

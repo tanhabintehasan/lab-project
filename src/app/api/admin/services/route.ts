@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import {
@@ -10,6 +11,8 @@ import {
 } from '@/lib/api-helpers';
 import { adminServiceCreateSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
+
+export const runtime = 'nodejs';
 
 const handleGet = async (request: NextRequest) => {
   try {
@@ -172,11 +175,11 @@ const handlePost = async (request: NextRequest, user: JWTPayload) => {
     console.log("Created Service:", service);
     return successResponse(service, 201);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: String(error) },
-      { status: 500 }
-    );
+    console.error('[Admin Services POST] Error:', error);
+    if (error instanceof z.ZodError) {
+      return errorResponse(error.issues[0]?.message || '请求参数无效', 400);
+    }
+    return errorResponse('创建服务失败，请稍后重试', 500);
   }
 };
 

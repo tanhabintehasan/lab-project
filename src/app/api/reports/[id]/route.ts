@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { deriveReportPassword } from '@/lib/report-processor';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(request);
   if (!user) return errorResponse('未授权', 401);

@@ -15,6 +15,8 @@ import {
 import { PaymentProviderType, ProviderMode } from '@prisma/client';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 // Validation schema
 const updateProviderSchema = z.object({
   name: z.string().min(1).optional(),

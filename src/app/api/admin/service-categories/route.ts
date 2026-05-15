@@ -11,6 +11,8 @@ import {
 } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const adminCategoryCreateSchema = z.object({
   nameZh: z.string().min(1, '分类中文名不能为空'),
   nameEn: z.string().optional().nullable(),

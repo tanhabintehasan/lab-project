@@ -5,6 +5,8 @@ import { successResponse, errorResponse } from '@/lib/api-helpers';
 import { verifyOTP } from '@/lib/services/otp.service';
 import { createToken, buildSessionCookie } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const requestSchema = z.object({
   email: z.string().email(),
   code: z.string().length(6, '验证码为6位数字'),

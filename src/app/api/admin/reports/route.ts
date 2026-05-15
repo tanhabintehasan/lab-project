@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { errorResponse, getAuthUser, getPaginationParams, paginatedResponse } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return errorResponse('Unauthorized', 401);

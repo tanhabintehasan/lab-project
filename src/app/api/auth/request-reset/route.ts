@@ -8,6 +8,8 @@ import { randomBytes } from 'crypto';
 import { sendEmail } from '@/lib/email';
 import { passwordResetEmail } from '@/lib/email-templates';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   const rlKey = getRateLimitKey(request, 'reset-request');
   const rl = rateLimit(rlKey, 3, 300_000); // 3 per 5 min

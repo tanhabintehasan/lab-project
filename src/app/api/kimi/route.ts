@@ -1,5 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { getAuthUser } from '@/lib/api-helpers';
+
+export const runtime = 'nodejs';
 
 function getKimiClient() {
   const apiKey = process.env.MOONSHOT_API_KEY;
@@ -12,19 +15,30 @@ function getKimiClient() {
   });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Require authentication to prevent unauthenticated API credit consumption
+  const user = await getAuthUser(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
+
+    // Basic validation
+    if (!Array.isArray(body?.messages)) {
+      return NextResponse.json({ error: 'messages must be an array' }, { status: 400 });
+    }
 
     const kimi = getKimiClient();
     const completion = await kimi.chat.completions.create({
-      model: "moonshot-v1-8k", 
+      model: "moonshot-v1-8k",
       messages: [
-        { 
-          role: "system", 
-          content: "You are a professional assistant integrated into the Lab Project." 
+        {
+          role: "system",
+          content: "You are a professional assistant integrated into the Lab Project."
         },
-        ...messages,
+        ...body.messages,
       ],
       temperature: 0.3,
     });

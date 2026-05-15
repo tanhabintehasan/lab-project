@@ -5,6 +5,8 @@ import { getPaymentProvider, checkIdempotency, setIdempotency } from '@/lib/paym
 import { sendEmail } from '@/lib/email';
 import { orderStatusEmail } from '@/lib/email-templates';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();

@@ -6,6 +6,8 @@ import { siteSettingSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
 import { getAdminSettings, invalidateSiteSettingsCache } from '@/lib/site-settings-cache';
 
+export const runtime = 'nodejs';
+
 const handleGet = async () => {
   try {
     const settings = await getAdminSettings();

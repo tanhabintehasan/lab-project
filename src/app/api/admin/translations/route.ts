@@ -5,6 +5,8 @@ import { successResponse, errorResponse, withAuth, getPaginationParams } from '@
 import { JWTPayload } from '@/lib/auth';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const getHandler = async (request: NextRequest) => {
   try {
     const { page, pageSize, skip } = getPaginationParams(request);

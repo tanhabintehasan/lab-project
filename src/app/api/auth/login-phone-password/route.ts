@@ -13,6 +13,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { normalizePhoneStrict } from '@/lib/phone-utils';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
+export const runtime = 'nodejs';
+
 const requestSchema = z.object({
   phone: z.string().min(1, '请输入手机号'),
   password: z.string().min(1, '请输入密码'),

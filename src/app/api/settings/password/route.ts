@@ -5,6 +5,8 @@ import { verifyPassword, hashPassword } from '@/lib/auth';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { changePasswordSchema } from '@/lib/validations';
 
+export const runtime = 'nodejs';
+
 export async function PUT(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return errorResponse('未授权', 401);

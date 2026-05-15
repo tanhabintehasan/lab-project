@@ -15,6 +15,8 @@ import {
 import { IntegrationType, ProviderMode } from '@prisma/client';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 // Validation schema
 const updateIntegrationSchema = z.object({
   name: z.string().min(1).optional(),

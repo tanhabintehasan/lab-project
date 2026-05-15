@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
 import { withAuth } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 const handler = async (request: NextRequest) => {
   try {
     const now = new Date();

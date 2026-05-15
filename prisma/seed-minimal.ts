@@ -15,8 +15,11 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set');
 }
 
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  adapter,
+  log: ['error'],
 });
 
 async function hashPassword(password: string): Promise<string> {

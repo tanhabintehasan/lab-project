@@ -21,6 +21,8 @@ import {
 } from '@/lib/translation-json';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 // ─── GET ───────────────────────────────────────────────────────
 
 const getHandler = async (_request: NextRequest, _user: JWTPayload) => {

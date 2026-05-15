@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 const META_PREFIX = '[META]';
 const ADMIN_NOTE_PREFIX = '[ADMIN_NOTE]';
 

@@ -59,7 +59,7 @@ export interface PublicSiteSettings {
   seoDescriptionEn?: string | null;
   seoKeywordsZh?: string | null;
   seoKeywordsEn?: string | null;
-  platformFeeRate?: Prisma.Decimal | null;
+  platformFeeRate?: number | null;
 }
 
 export interface AdminSiteSettings extends PublicSiteSettings {
@@ -78,6 +78,19 @@ function setCache<T>(entryRef: { current: CacheEntry<T> | null }, data: T): void
     data,
     expiresAt: Date.now() + CACHE_TTL_MS,
   };
+}
+
+/* ─── Safe data transform ─── */
+
+function sanitizePublicSettings(row: any): PublicSiteSettings {
+  if (!row) return {};
+  const data: PublicSiteSettings = { ...row };
+  // Prisma.Decimal is not JSON-serializable; convert to number
+  const fee = data.platformFeeRate as any;
+  if (fee instanceof Prisma.Decimal) {
+    data.platformFeeRate = fee.toNumber();
+  }
+  return data;
 }
 
 /* ─── Public Settings (safe for frontend) ─── */
@@ -126,14 +139,20 @@ export async function getPublicSettings(): Promise<PublicSiteSettings> {
     return publicSettingsCache!.data;
   }
 
-  const row = await (prisma as any).siteSetting.findFirst({
-    orderBy: { createdAt: 'asc' },
-    select: PUBLIC_FIELDS_SELECT,
-  });
+  try {
+    const row = await (prisma as any).siteSetting.findFirst({
+      orderBy: { createdAt: 'asc' },
+      select: PUBLIC_FIELDS_SELECT,
+    });
 
-  const data: PublicSiteSettings = row || {};
-  publicSettingsCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
-  return data;
+    const data = sanitizePublicSettings(row);
+    publicSettingsCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+    return data;
+  } catch (err) {
+    console.error('[getPublicSettings] DB error:', err);
+    // Return empty defaults so the page doesn't crash
+    return {};
+  }
 }
 
 /**
@@ -145,13 +164,18 @@ export async function getAdminSettings(): Promise<AdminSiteSettings> {
     return adminSettingsCache!.data;
   }
 
-  const row = await (prisma as any).siteSetting.findFirst({
-    orderBy: { createdAt: 'asc' },
-  });
+  try {
+    const row = await (prisma as any).siteSetting.findFirst({
+      orderBy: { createdAt: 'asc' },
+    });
 
-  const data: AdminSiteSettings = row || {};
-  adminSettingsCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
-  return data;
+    const data = sanitizePublicSettings(row);
+    adminSettingsCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+    return data;
+  } catch (err) {
+    console.error('[getAdminSettings] DB error:', err);
+    return {};
+  }
 }
 
 /* ─── AppConfig (sensitive keys, admin-only) ─── */
@@ -172,17 +196,22 @@ export async function getAllAppConfig(): Promise<Record<string, string>> {
     return appConfigCache!.data;
   }
 
-  const rows = await (prisma as any).appConfig.findMany({
-    select: { key: true, value: true },
-  });
+  try {
+    const rows = await (prisma as any).appConfig.findMany({
+      select: { key: true, value: true },
+    });
 
-  const data: Record<string, string> = {};
-  for (const row of rows) {
-    data[row.key] = row.value;
+    const data: Record<string, string> = {};
+    for (const row of rows) {
+      data[row.key] = row.value;
+    }
+
+    appConfigCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+    return data;
+  } catch (err) {
+    console.error('[getAllAppConfig] DB error:', err);
+    return {};
   }
-
-  appConfigCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
-  return data;
 }
 
 /**
@@ -194,25 +223,30 @@ export async function setAppConfig(
   value: string,
   options?: { category?: string; description?: string; updatedBy?: string }
 ): Promise<void> {
-  await (prisma as any).appConfig.upsert({
-    where: { key },
-    update: {
-      value,
-      ...(options?.category && { category: options.category }),
-      ...(options?.description && { description: options.description }),
-      ...(options?.updatedBy && { updatedBy: options.updatedBy }),
-      updatedAt: new Date(),
-    },
-    create: {
-      key,
-      value,
-      category: options?.category || 'general',
-      description: options?.description,
-      updatedBy: options?.updatedBy,
-    },
-  });
+  try {
+    await (prisma as any).appConfig.upsert({
+      where: { key },
+      update: {
+        value,
+        ...(options?.category && { category: options.category }),
+        ...(options?.description && { description: options.description }),
+        ...(options?.updatedBy && { updatedBy: options.updatedBy }),
+        updatedAt: new Date(),
+      },
+      create: {
+        key,
+        value,
+        category: options?.category || 'general',
+        description: options?.description,
+        updatedBy: options?.updatedBy,
+      },
+    });
 
-  invalidateAppConfigCache();
+    invalidateAppConfigCache();
+  } catch (err) {
+    console.error('[setAppConfig] DB error:', err);
+    throw new Error('Failed to save app config');
+  }
 }
 
 /* ─── Cache invalidation ─── */

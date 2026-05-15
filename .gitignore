@@ -68,3 +68,5 @@ database/backups/
 
 # Exclude database archive folder
 database/archive/
+# Local Netlify folder
+.netlify

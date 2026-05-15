@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { errorResponse, successResponse, getAuthUser } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 
 interface TimeRange {

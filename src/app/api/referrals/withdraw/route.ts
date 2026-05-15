@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { withdrawalSchema } from '@/lib/validations';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) return errorResponse('未授权', 401);

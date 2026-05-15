@@ -34,6 +34,7 @@ interface EquipmentDetail {
   quantity?: number;
   hourlyRate?: string | number;
   dailyRate?: string | number;
+  imageUrl?: string | null;
   lab?: {
     id: string;
     nameZh: string;
@@ -457,8 +458,16 @@ export default function EquipmentBookingPage() {
 
           <div className="space-y-6">
             <Card padding="lg">
-              <div className="flex items-center justify-center h-48 rounded-xl bg-gray-100 mb-5">
-                <Wrench className="h-14 w-14 text-gray-300" />
+              <div className="flex items-center justify-center h-48 rounded-xl bg-gray-100 mb-5 overflow-hidden">
+                {equipment.imageUrl ? (
+                  <img
+                    src={equipment.imageUrl}
+                    alt={equipment.nameZh}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Wrench className="h-14 w-14 text-gray-300" />
+                )}
               </div>
 
               <div className="space-y-3">

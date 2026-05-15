@@ -14,6 +14,8 @@ import { createAuditLog } from '@/lib/services/audit.service';
 import { PaymentProviderType, ProviderMode } from '@prisma/client';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 // Validation schema
 const createProviderSchema = z.object({
   name: z.string().min(1, 'Name is required'),

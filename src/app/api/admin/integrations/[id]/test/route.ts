@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { testIntegrationConnection } from '@/lib/services/integration-config.service';
 
+export const runtime = 'nodejs';
+
 interface RouteContext {
   params: Promise<{ id: string }>;
 }

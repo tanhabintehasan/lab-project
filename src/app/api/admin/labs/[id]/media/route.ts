@@ -14,6 +14,8 @@ import {
 } from '@/services/media-service';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per image
 
 // ─── POST ────────────────────────────────────────────────────

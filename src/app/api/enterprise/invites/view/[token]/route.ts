@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
     const { token } = await params;

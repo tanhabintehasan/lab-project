@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { buildClearCookie } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request);

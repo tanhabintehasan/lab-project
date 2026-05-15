@@ -8,6 +8,8 @@ import { processWebhook } from '@/lib/services/webhook.service';
 import { getPaymentProviderByType } from '@/lib/services/payment-config.service';
 import { PaymentProviderType } from '@prisma/client';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     // Get form-urlencoded body

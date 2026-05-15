@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { getStorageProvider, validateUpload } from '@/lib/storage';
 
+export const runtime = 'nodejs';
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 

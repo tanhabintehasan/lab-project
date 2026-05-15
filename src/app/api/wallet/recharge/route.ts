@@ -7,6 +7,8 @@ import { rechargeSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { randomUUID } from 'crypto';
 
+export const runtime = 'nodejs';
+
 /**
  * Creates a pending recharge transaction (payment intent).
  * The wallet is NOT credited here. In production, a webhook from the

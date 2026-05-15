@@ -10,6 +10,8 @@ import {
 } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 function getBookingDelegate() {
   return (prisma as unknown as Record<string, any>).equipmentBooking;
 }

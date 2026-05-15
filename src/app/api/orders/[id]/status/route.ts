@@ -8,6 +8,8 @@ import { orderStatusEmail } from '@/lib/email-templates';
 import { isValidTransition } from '@/lib/validations';
 import { recordLabPayout } from '@/lib/financial-ledger';
 
+export const runtime = 'nodejs';
+
 const statusSchema = z.object({
   status: z.enum(['PENDING_PAYMENT', 'PAID', 'SAMPLE_PENDING', 'SAMPLE_SHIPPED', 'SAMPLE_RECEIVED', 'SAMPLE_INSPECTED', 'TESTING_IN_PROGRESS', 'TESTING_COMPLETE', 'REPORT_GENERATING', 'REPORT_APPROVED', 'REPORT_DELIVERED', 'COMPLETED', 'CANCELLED', 'REFUNDING', 'REFUNDED']),
   note: z.string().optional(),

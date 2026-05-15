@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handler = async (_request: NextRequest, user: JWTPayload) => {
   try {
     const labUser = await prisma.labUser.findUnique({

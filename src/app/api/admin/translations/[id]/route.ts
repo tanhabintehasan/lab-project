@@ -4,6 +4,8 @@ import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const updateSchema = z.object({
   value: z.string(),
 });

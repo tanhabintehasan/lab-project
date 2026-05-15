@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const rlKey = getRateLimitKey(request, 'report-verify');
   const rl = rateLimit(rlKey, 20, 60_000);

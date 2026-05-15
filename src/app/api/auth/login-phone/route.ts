@@ -13,6 +13,8 @@ import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizePhoneStrict } from '@/lib/phone-utils';
 
+export const runtime = 'nodejs';
+
 const requestSchema = z.object({
   phone: z.string().min(1, '请输入手机号'),
   code: z.string().length(6, '验证码必须是6位数字')

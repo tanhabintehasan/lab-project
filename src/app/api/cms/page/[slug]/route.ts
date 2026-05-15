@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 function extractSlug(request: NextRequest): string | null {
   const segments = request.nextUrl.pathname.split('/');
   return segments[segments.length - 1] || null;

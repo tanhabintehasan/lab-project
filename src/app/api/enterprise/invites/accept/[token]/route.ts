@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { hashPassword, createToken, buildSessionCookie } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const acceptSchema = z.object({
   // If user already exists, they just accept
   // If new user, they must provide password

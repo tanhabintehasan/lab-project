@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, getAuthUser, getPaginationParams } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 // Note: This is a mock implementation. In production, you'd have a dedicated Approval table
 // For now, we'll return mock data to demonstrate the UI
 export async function GET(request: NextRequest) {

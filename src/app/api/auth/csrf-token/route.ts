@@ -9,6 +9,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { generateCSRFToken, getCSRFToken } from '@/lib/services/csrf.service';
 import prisma from '@/lib/db';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const user = await getCurrentUser();

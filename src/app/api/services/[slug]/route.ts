@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 function toNumberOrNull(value: unknown): number | null {
   if (value === null || value === undefined) return null;
   const parsed = Number(value);

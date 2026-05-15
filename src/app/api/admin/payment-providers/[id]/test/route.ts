@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { testPaymentProviderConnection } from '@/lib/services/payment-config.service';
 
+export const runtime = 'nodejs';
+
 interface RouteContext {
   params: Promise<{ id: string }>;
 }

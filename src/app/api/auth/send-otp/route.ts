@@ -10,6 +10,8 @@ import { createOTP } from '@/lib/services/otp.service';
 import { sendOTPSMS } from '@/lib/services/sms.service';
 import { checkRateLimit } from '@/lib/services/rate-limit.service';
 
+export const runtime = 'nodejs';
+
 const requestSchema = z.object({
   phone: z.string()
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')

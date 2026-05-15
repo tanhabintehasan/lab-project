@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 /**
  * GET /api/admin/cms/homepage
  *

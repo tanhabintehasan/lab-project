@@ -4,6 +4,8 @@ import { successResponse, errorResponse } from '@/lib/api-helpers';
 import { withAuth } from '@/lib/api-helpers';
 import { processWebhook } from '@/lib/services/webhook.service';
 
+export const runtime = 'nodejs';
+
 const handler = async (request: NextRequest, user: any) => {
   try {
     // Extract ID from URL

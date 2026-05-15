@@ -9,6 +9,8 @@ import {
 import { getPlatformEarningsSummary, getAllLabWallets } from '@/lib/financial-ledger';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 /**
  * GET /api/admin/lab-earnings
  *

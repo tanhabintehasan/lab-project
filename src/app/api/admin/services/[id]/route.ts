@@ -6,6 +6,8 @@ import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { adminServiceCreateSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 async function findServiceByIdentifier(identifier: string) {
   return prisma.testingService.findFirst({
     where: {

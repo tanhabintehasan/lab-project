@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const timelineSchema = z.object({
   status: z.string(),
   title: z.string(),

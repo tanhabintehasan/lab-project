@@ -403,7 +403,7 @@ export default function AdminEquipmentPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>名称</TableHead>
+                  <TableHead>设备</TableHead>
                   <TableHead>所属实验室</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>数量</TableHead>
@@ -416,11 +416,24 @@ export default function AdminEquipmentPage() {
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium text-gray-900">{item.nameZh}</div>
-                        {item.model ? (
-                          <div className="mt-1 line-clamp-1 text-xs text-gray-500">型号: {item.model}</div>
-                        ) : null}
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.nameZh}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs">无图</div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{item.nameZh}</div>
+                          {item.model ? (
+                            <div className="mt-0.5 line-clamp-1 text-xs text-gray-500">型号: {item.model}</div>
+                          ) : null}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{item.lab?.nameZh || '-'}</TableCell>

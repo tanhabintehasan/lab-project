@@ -6,6 +6,8 @@ import { createOTP } from '@/lib/services/otp.service';
 import { sendEmail } from '@/lib/email';
 import { verificationEmail } from '@/lib/email-templates';
 
+export const runtime = 'nodejs';
+
 const requestSchema = z.object({
   email: z.string().email(),
 });

@@ -6,6 +6,8 @@ import { successResponse, errorResponse, getAuthUser, getPaginationParams } from
 import { sendEmail } from '@/lib/email';
 import { enterpriseInviteEmail } from '@/lib/email-templates';
 
+export const runtime = 'nodejs';
+
 const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(['owner', 'admin', 'member']).default('member'),

@@ -8,6 +8,8 @@ import { reportReadyEmail } from '@/lib/email-templates';
 import { processReportPdf, fetchFileBuffer, deriveReportPassword } from '@/lib/report-processor';
 import { getMediaService } from '@/services/media-service';
 
+export const runtime = 'nodejs';
+
 const approveSchema = z.object({
   note: z.string().optional(),
 });

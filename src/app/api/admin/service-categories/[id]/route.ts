@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const adminCategoryUpdateSchema = z.object({
   nameZh: z.string().min(1, '分类中文名不能为空').optional(),
   nameEn: z.string().optional().nullable(),

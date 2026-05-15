@@ -6,8 +6,9 @@ export const runtime = 'nodejs';
 /**
  * GET /api/health
  *
- * Diagnostic endpoint for Netlify (and local) deployments.
+ * Lightweight diagnostic endpoint for load balancers and monitoring.
  * Returns 200 if the database connection works, 500 otherwise.
+ * Does NOT expose runtime version or internal paths.
  */
 export async function GET() {
   const checks: Record<string, { ok: boolean; detail?: string }> = {};
@@ -17,7 +18,7 @@ export async function GET() {
     ok: !!process.env.DATABASE_URL,
     detail: process.env.DATABASE_URL
       ? 'DATABASE_URL is set'
-      : 'DATABASE_URL is MISSING — add it in Netlify Site settings → Environment variables',
+      : 'DATABASE_URL is MISSING',
   };
 
   // 2. DB connectivity check
@@ -44,8 +45,6 @@ export async function GET() {
     {
       status: allOk ? 'healthy' : 'unhealthy',
       checks,
-      nodeVersion: process.version,
-      runtime: 'nodejs',
     },
     { status: allOk ? 200 : 500 }
   );

@@ -6,6 +6,8 @@ import { appConfigSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
 import { getAllAppConfig, setAppConfig, invalidateAppConfigCache } from '@/lib/site-settings-cache';
 
+export const runtime = 'nodejs';
+
 /**
  * GET /api/admin/app-config
  *

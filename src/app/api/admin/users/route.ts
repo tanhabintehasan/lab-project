@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { errorResponse, withAuth, getPaginationParams, paginatedResponse } from '@/lib/api-helpers';
 
+export const runtime = 'nodejs';
+
 const handler = async (request: NextRequest) => {
   try {
     const { page, pageSize, skip } = getPaginationParams(request);

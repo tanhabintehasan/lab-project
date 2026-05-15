@@ -5,6 +5,8 @@ import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { cmsPageSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 function extractId(request: NextRequest): string | null {
   const segments = request.nextUrl.pathname.split('/');
   return segments[segments.length - 1] || null;

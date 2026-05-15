@@ -13,6 +13,8 @@ import {
 import { IntegrationType, ProviderMode } from '@prisma/client';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 // Validation schema
 const createIntegrationSchema = z.object({
   name: z.string().min(1, 'Name is required'),

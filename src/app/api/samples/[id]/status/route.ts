@@ -6,6 +6,8 @@ import { JWTPayload } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { orderStatusEmail } from '@/lib/email-templates';
 
+export const runtime = 'nodejs';
+
 const statusSchema = z.object({
   status: z.enum(['PENDING_SUBMISSION', 'SHIPPED', 'RECEIVED', 'INSPECTING', 'INSPECTION_PASSED', 'INSPECTION_FAILED', 'TESTING', 'TESTING_COMPLETE', 'STORED', 'RETURNED']),
   note: z.string().optional(),

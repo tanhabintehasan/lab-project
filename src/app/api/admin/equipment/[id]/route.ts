@@ -5,6 +5,8 @@ import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { adminEquipmentCreateSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handleGet = async (request: NextRequest) => {
   const url = new URL(request.url);
   const id = url.pathname.split('/').pop()!;

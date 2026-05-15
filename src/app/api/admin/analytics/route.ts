@@ -18,6 +18,8 @@ import { withAuth, successResponse, errorResponse } from '@/lib/api-helpers';
 import { getDashboardAnalyticsCached } from '@/lib/analytics-cache';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handler = async (_request: NextRequest, _user: JWTPayload) => {
   try {
     const data = await getDashboardAnalyticsCached();

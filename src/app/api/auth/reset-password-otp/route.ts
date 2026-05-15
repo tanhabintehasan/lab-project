@@ -10,6 +10,8 @@ import { verifyOTP } from '@/lib/services/otp.service';
 import { hashPassword } from '@/lib/auth';
 import prisma from '@/lib/db';
 
+export const runtime = 'nodejs';
+
 const requestSchema = z.object({
   phone: z.string()
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')

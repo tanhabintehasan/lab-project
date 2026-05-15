@@ -6,6 +6,8 @@ import { successResponse, errorResponse, withAuth } from '@/lib/api-helpers';
 import { adminUserUpdateSchema } from '@/lib/validations';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 const handler = async (request: NextRequest, user: JWTPayload) => {
   const url = new URL(request.url);
   const id = url.pathname.split('/').pop()!;

@@ -6,6 +6,8 @@ import { JWTPayload } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { reportReadyEmail } from '@/lib/email-templates';
 
+export const runtime = 'nodejs';
+
 const publishSchema = z.object({
   makePublic: z.boolean().default(false),
 });

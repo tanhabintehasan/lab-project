@@ -6,6 +6,8 @@ import { successResponse, errorResponse, getAuthUser } from '@/lib/api-helpers';
 import { isAdmin } from '@/lib/auth';
 import { orderUpdateSchema, isValidTransition } from '@/lib/validations';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -48,4 +48,6 @@ const handler = async (request: NextRequest, user: JWTPayload) => {
 };
 
 import { withAuth } from '@/lib/api-helpers';
+
+export const runtime = 'nodejs';
 export const PATCH = withAuth(handler, ['ENTERPRISE_MEMBER']);

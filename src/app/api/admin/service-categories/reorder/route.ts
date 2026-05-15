@@ -10,6 +10,8 @@ import {
 } from '@/lib/admin-api';
 import { JWTPayload } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 // ─── Validation ──────────────────────────────────────────────
 
 const reorderItemSchema = z.object({

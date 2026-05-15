@@ -6,7 +6,13 @@ import { createHmac } from 'crypto';
  * The password is never stored; it is recomputed on demand.
  */
 export function deriveReportPassword(orderNo: string, reportNo: string): string {
-  const secret = process.env.PDF_ENCRYPTION_SECRET || 'lab-report-default-secret';
+  const secret = process.env.PDF_ENCRYPTION_SECRET;
+  if (!secret) {
+    throw new Error(
+      'PDF_ENCRYPTION_SECRET is not set. ' +
+        'Add it to your environment variables to enable report password derivation.'
+    );
+  }
   return createHmac('sha256', secret)
     .update(`${orderNo}:${reportNo}`)
     .digest('base64url')
