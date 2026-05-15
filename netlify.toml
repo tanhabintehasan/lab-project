@@ -1,28 +1,24 @@
 [build]
-  # IMPORTANT: We add prisma generate BEFORE the build to ensure the client exists
-  command = "npx prisma generate && npm run build"
+  # Removed npx prisma generate from here because Next.js 
+  # usually triggers it, but we will keep it simple.
+  command = "npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
   SHARP_IGNORE_GLOBAL_LIBVIPS = "1"
-  # Support multiple targets for compatibility
-  PRISMA_CLI_BINARY_TARGETS = "debian-openssl-3.0.x, rhel-openssl-3.0.x"
+  # Use only the standard target for Netlify's Ubuntu/Noble environment
+  PRISMA_CLI_BINARY_TARGETS = "debian-openssl-3.0.x"
   NPM_FLAGS = "--include=optional"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
 [functions]
-  # Keep your inclusions, but let's make sure the engines are bundled
   included_files = [
     "public/uploads/**/*",
     "node_modules/.prisma/client/**/*",
-    "node_modules/@prisma/client/**/*",
-    "node_modules/prisma/build/*"
+    "node_modules/@prisma/client/**/*"
   ]
 
-# Your headers are already perfect for security; keep them as they are.
+# Keep your headers and plugins as they were
 
 [[headers]]
   for = "/*"
