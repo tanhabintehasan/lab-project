@@ -1,29 +1,28 @@
 [build]
-  command = "npm run build"
+  # IMPORTANT: We add prisma generate BEFORE the build to ensure the client exists
+  command = "npx prisma generate && npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
   SHARP_IGNORE_GLOBAL_LIBVIPS = "1"
-  PRISMA_CLI_BINARY_TARGETS = "debian-openssl-3.0.x"
-  PRISMA_GENERATE_SKIP_AUTOINSTALL = "true"
+  # Support multiple targets for compatibility
+  PRISMA_CLI_BINARY_TARGETS = "debian-openssl-3.0.x, rhel-openssl-3.0.x"
   NPM_FLAGS = "--include=optional"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
 [functions]
-  # Added 'public/uploads/**/*' to ensure your images are bundled
+  # Keep your inclusions, but let's make sure the engines are bundled
   included_files = [
     "public/uploads/**/*",
     "node_modules/.prisma/client/**/*",
     "node_modules/@prisma/client/**/*",
-    "node_modules/@prisma/client-runtime-utils/**/*",
-    "node_modules/@prisma/adapter-pg/**/*",
-    "node_modules/@prisma/driver-adapter-utils/**/*",
-    "node_modules/pg/**/*",
-    "node_modules/pg-pool/**/*"
+    "node_modules/prisma/build/*"
   ]
+
+# Your headers are already perfect for security; keep them as they are.
 
 [[headers]]
   for = "/*"
