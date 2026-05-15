@@ -148,7 +148,22 @@ export const defaultPartners = [
 ];
 
 export const defaultEquipment = [
-  { id: 'default-equip-1', title: '表征设备', description: '高端分析设备', image: '/uploads/settings/equip-1.jpg' },
-  { id: 'default-equip-2', title: '电化学设备', description: '电池测试系统', image: '/uploads/settings/equip-2.jpg' },
-  { id: 'default-equip-3', title: '环境设备', description: '可靠性测试设备', image: '/uploads/settings/equip-3.jpg' },
+  { 
+    id: 'default-eq-1', 
+    title: '全自动比表面及孔隙率分析仪', 
+    image: '/uploads/settings/equip-1.png', // Change .jpg to .png
+    description: '专业级多站式全自动比表面与孔隙度分析仪' 
+  },
+  { 
+    id: 'default-eq-2', 
+    title: '场发射扫描电子显微镜', 
+    image: '/uploads/settings/equip-2.png', // Change .jpg to .png
+    description: '超高分辨率场发射扫描显微成像系统' 
+  },
+  { 
+    id: 'default-eq-3', 
+    title: '电感耦合等离子体质谱仪', 
+    image: '/uploads/settings/equip-3.png', // Change .jpg to .png
+    description: '高灵敏度多元素快速定性定量分析' 
+  },
 ];

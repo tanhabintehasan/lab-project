@@ -65,3 +65,6 @@ database/backups/
 *.sqlite
 *.sqlite3
 *.db
+
+# Exclude database archive folder
+database/archive/

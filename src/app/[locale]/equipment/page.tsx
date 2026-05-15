@@ -24,7 +24,7 @@ const statusMap = (t: (key: string) => string): Record<
 
 export default function EquipmentPage() {
   const t = useTranslations('equipment');
-  const [equipment, setEquipment] = useState<Array<Record<string, unknown>>>([]);
+  const [equipment, setEquipment] = useState<Array<Record<string, any>>>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -93,6 +93,8 @@ export default function EquipmentPage() {
                 const status = eq.status as string;
                 const quantity = (eq.quantity as number) ?? 1;
                 const lab = eq.lab as { nameZh: string; city?: string } | null;
+                // Get the imageUrl from the database
+                const imageUrl = eq.imageUrl as string | null;
 
                 const s = statusMap(t)[status] || statusMap(t).UNAVAILABLE;
                 const labText = lab ? `${lab.nameZh}${lab.city ? ` · ${lab.city}` : ''}` : null;
@@ -100,13 +102,26 @@ export default function EquipmentPage() {
                 return (
                   <Link key={id} href={`/equipment/${slug}`}>
                     <Card hover padding="none" className="overflow-hidden">
-                      <div className="h-40 bg-gray-100 flex items-center justify-center">
-                        <Wrench className="h-12 w-12 text-gray-300" />
+                      <div className="h-40 bg-gray-100 overflow-hidden relative">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={nameZh}
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                          />
+                        ) : (
+                          /* Fallback to local PNG if no DB image exists */
+                          <img
+                            src="/uploads/settings/equip-1.png"
+                            alt="Equipment Placeholder"
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </div>
 
                       <div className="p-4">
                         <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900">{nameZh}</h3>
+                          <h3 className="font-semibold text-gray-900 line-clamp-1">{nameZh}</h3>
                           <Badge variant={s.variant}>{s.label}</Badge>
                         </div>
 
@@ -117,7 +132,7 @@ export default function EquipmentPage() {
                         <p className="text-sm text-gray-500 mb-1">{t('quantity')}: {quantity}</p>
 
                         {labText ? (
-                          <p className="text-sm text-gray-400">{labText}</p>
+                          <p className="text-sm text-gray-400 line-clamp-1">{labText}</p>
                         ) : null}
                       </div>
                     </Card>

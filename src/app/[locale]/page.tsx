@@ -846,51 +846,50 @@ export default function HomePage() {
       )}
 
       {/* Equipment Showcase */}
-      <section className="bg-white py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-bold text-gray-900">设备展示</h2>
-            <p className="mt-2 text-base text-gray-500">设备介绍与能力展示</p>
+    <section className="bg-white py-16">
+  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="mb-10 text-center">
+      <h2 className="text-3xl font-bold text-gray-900">设备展示</h2>
+      <p className="mt-2 text-base text-gray-500">设备介绍与能力展示</p>
+    </div>
+    <div className="grid gap-6 md:grid-cols-3">
+      {displayEquipment.map((equip, idx) => {
+        const bgs = [
+          'bg-emerald-50/70',
+          'bg-cyan-50/70',
+          'bg-teal-50/70',
+          'bg-indigo-50/70',
+        ];
+        const bg = bgs[idx % bgs.length];
+
+        // Use the image from data, or fallback to the specific png
+        const imgSrc = equip.image || "/uploads/settings/equip-1.png";
+
+        return (
+          <div
+            key={equip.id}
+            className="group overflow-hidden rounded-3xl border border-gray-100 bg-white transition-all hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className={`relative aspect-square overflow-hidden ${bg}`}>
+              <Image
+                src={imgSrc}
+                alt={equip.title}
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 33vw"
+                unoptimized={true}
+              />
+            </div>
+            <div className="p-5">
+              <h3 className="text-base font-bold text-gray-900">{equip.title}</h3>
+              <p className="mt-1 text-sm text-gray-500">{equip.description}</p>
+            </div>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {displayEquipment.map((equip, idx) => {
-              const bgs = [
-                'bg-emerald-50/70',
-                'bg-cyan-50/70',
-                'bg-teal-50/70',
-              ];
-              const bg = bgs[idx % bgs.length];
-              return (
-                <div
-                  key={equip.id}
-                  className="group overflow-hidden rounded-3xl border border-gray-100 bg-white transition-all hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className={`relative aspect-square overflow-hidden ${bg}`}>
-                    {equip.image ? (
-                      <Image
-                        src={equip.image}
-                        alt={equip.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        unoptimized={true}
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <ShieldCheck className="h-12 w-12 text-gray-300 transition-colors group-hover:text-emerald-500" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-base font-bold text-gray-900">{equip.title}</h3>
-                    <p className="mt-1 text-sm text-gray-500">{equip.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+        );
+      })}
+    </div>
+  </div>
+</section>
 
       {/* Professional Services */}
       <section className="bg-slate-50 py-16">

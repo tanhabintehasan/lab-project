@@ -24,7 +24,6 @@ interface EquipmentDetail {
   id?: string;
   slug: string;
   nameZh: string;
-  // nameEn removed - Chinese only
   model?: string;
   manufacturer?: string;
   descZh?: string;
@@ -35,6 +34,7 @@ interface EquipmentDetail {
   dailyRate?: string | number;
   specifications?: Record<string, string> | null;
   lab?: EquipmentLab | null;
+  imageUrl?: string; // Added to interface
 }
 
 const statusMap = (t: (key: string) => string): Record<
@@ -118,7 +118,6 @@ export default function EquipmentDetailPage() {
 
   const lab = eq.lab ?? null;
   const specs = eq.specifications ?? null;
-
   const canBook = Boolean(eq.bookable) && eq.status === 'AVAILABLE';
 
   return (
@@ -135,8 +134,22 @@ export default function EquipmentDetailPage() {
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-gray-100 rounded-xl flex items-center justify-center min-h-[300px]">
-            <Wrench className="h-16 w-16 text-gray-300" />
+          {/* Main Image Block */}
+          <div className="bg-gray-100 rounded-xl flex items-center justify-center min-h-[300px] overflow-hidden relative">
+            {eq.imageUrl ? (
+              <img
+                src={eq.imageUrl}
+                alt={eq.nameZh}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              /* Fallback to local PNG if no DB image exists */
+              <img
+                src="/uploads/settings/equip-1.png"
+                alt="Equipment Placeholder"
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
 
           <div>
@@ -146,7 +159,6 @@ export default function EquipmentDetailPage() {
 
             <h1 className="text-2xl font-bold text-gray-900 mb-1">{eq.nameZh}</h1>
 
-            {/* nameEn removed - Chinese only */}
             {eq.model ? <p className="text-sm text-gray-600 mb-1">{t('model')}: {eq.model}</p> : null}
             {eq.manufacturer ? (
               <p className="text-sm text-gray-600 mb-4">{t('usageGuide')}: {eq.manufacturer}</p>
@@ -202,7 +214,7 @@ export default function EquipmentDetailPage() {
         {eq.descZh ? (
           <Card padding="lg" className="mt-8">
             <h2 className="text-lg font-bold text-gray-900 mb-3">{t('description')}</h2>
-            <p className="text-gray-600 leading-relaxed">{eq.descZh}</p>
+            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{eq.descZh}</p>
           </Card>
         ) : null}
 
